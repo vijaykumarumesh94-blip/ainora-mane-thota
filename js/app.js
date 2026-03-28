@@ -136,7 +136,7 @@ function renderCatalog() {
           <div class="flex items-start justify-between mb-1">
             <div>
               <h3 class="font-semibold text-sm md:text-base leading-tight">${p.name}</h3>
-              <p class="text-soil/40 text-xs">${p.kannada}</p>
+              <p class="text-soil/70 text-xs">${p.kannada}</p>
             </div>
             <span class="stock-badge ${stockClass}">${stockText}</span>
           </div>
@@ -145,8 +145,8 @@ function renderCatalog() {
           </div>
           <div class="flex items-end justify-between">
             <div>
-              <div class="font-bold text-base md:text-lg">₹${p.price}<span class="text-soil/40 text-xs font-normal"> / ${p.unit}</span></div>
-              <div class="text-soil/40 text-xs">Ready in ${p.deliveryDays}</div>
+              <div class="font-bold text-base md:text-lg">₹${p.price}<span class="text-soil/70 text-xs font-normal"> / ${p.unit}</span></div>
+              <div class="text-soil/70 text-xs">Ready in ${p.deliveryDays}</div>
             </div>
             <div class="qty-selector">
               <button onclick="updateCart('${p.id}', -1)" ${disabled}>−</button>
