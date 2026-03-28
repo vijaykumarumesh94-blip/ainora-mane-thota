@@ -337,6 +337,7 @@ async function submitOrder(e) {
 
     // Show success
     closeOrderForm();
+    lastOrderTotal = total;
     document.getElementById('success-name').textContent = name;
     document.getElementById('whatsapp-btn').href = waUrl;
     document.getElementById('success-modal').classList.remove('hidden');
@@ -356,6 +357,55 @@ async function submitOrder(e) {
 function closeSuccess() {
   document.getElementById('success-modal').classList.add('hidden');
   document.getElementById('success-modal').classList.remove('flex');
+}
+
+// ==================== PAYMENT ====================
+
+let lastOrderTotal = 0;
+
+function showPaymentModal() {
+  const upiId = CONFIG.upiId;
+  const payeeName = CONFIG.upiPayeeName;
+  const amount = lastOrderTotal;
+  const txnRef = 'AFT-' + Date.now();
+
+  // UPI payment string
+  const upiString = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=${encodeURIComponent('Ainora Mane Thota Order')}&tr=${txnRef}`;
+
+  // Set amount display
+  document.getElementById('payment-amount').textContent = amount;
+  document.getElementById('upi-id-display').textContent = upiId;
+
+  // UPI app deep links
+  document.getElementById('phonepe-link').href = `phonepe://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=Order`;
+  document.getElementById('gpay-link').href = `tez://upi/pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=Order`;
+  document.getElementById('paytm-link').href = `paytmmp://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=Order`;
+
+  // QR code via goqr.me API
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiString)}`;
+  document.getElementById('qr-code').src = qrUrl;
+
+  // Show modal
+  document.getElementById('payment-modal').classList.remove('hidden');
+  document.getElementById('payment-modal').classList.add('flex');
+}
+
+function closePaymentModal() {
+  document.getElementById('payment-modal').classList.add('hidden');
+  document.getElementById('payment-modal').classList.remove('flex');
+}
+
+function copyUpiId() {
+  const upiId = CONFIG.upiId;
+  navigator.clipboard.writeText(upiId).then(() => {
+    const label = document.getElementById('copy-label');
+    label.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Copied!';
+    label.classList.add('text-leaf');
+    setTimeout(() => {
+      label.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Tap to copy';
+      label.classList.remove('text-leaf');
+    }, 2000);
+  });
 }
 
 // ==================== ADMIN ====================

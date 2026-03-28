@@ -13,7 +13,9 @@ const firebaseConfig = {
 const CONFIG = {
   whatsappNumber: '917892325072',
   adminPassword: 'magadi2025',
-  currency: '₹'
+  currency: '₹',
+  upiId: '7892325072@ybl',
+  upiPayeeName: 'Ainora Mane Thota'
 };
 
 // Initialize Firebase
