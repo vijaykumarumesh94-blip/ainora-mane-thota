@@ -1,13 +1,6 @@
-// Ainora Mane Thota Fresh — Main Application Logic
+// Ainora Mane Thota — Main Application Logic (Firebase Firestore)
 
-// ==================== DATA LAYER ====================
-
-const STORAGE_KEYS = {
-  products: 'mff_products',
-  orders: 'mff_orders',
-  cart: 'mff_cart',
-  adminAuth: 'mff_admin_auth'
-};
+// ==================== DEFAULT PRODUCTS ====================
 
 const DEFAULT_PRODUCTS = [
   { id: '1', name: 'Coconut', kannada: 'Thenginakayi', emoji: '🥥', photoUrl: null, unit: 'piece', price: 40, stock: 10, maxStock: 10, lowStockThreshold: 5, deliveryDays: '2-3 days', available: true },
@@ -20,39 +13,77 @@ const DEFAULT_PRODUCTS = [
 ];
 
 const PRODUCT_COLORS = [
-  'bg-emerald-100',
-  'bg-amber-100',
-  'bg-lime-100',
-  'bg-green-100',
-  'bg-orange-100',
-  'bg-red-100',
-  'bg-teal-100',
-  'bg-yellow-100',
-  'bg-cyan-100',
-  'bg-rose-100'
+  'bg-emerald-100', 'bg-amber-100', 'bg-lime-100', 'bg-green-100',
+  'bg-orange-100', 'bg-red-100', 'bg-teal-100', 'bg-yellow-100',
+  'bg-cyan-100', 'bg-rose-100'
 ];
 
-// Data access functions
-function getProducts() {
-  const stored = localStorage.getItem(STORAGE_KEYS.products);
-  if (stored) return JSON.parse(stored);
-  // Initialize with defaults
-  localStorage.setItem(STORAGE_KEYS.products, JSON.stringify(DEFAULT_PRODUCTS));
-  return DEFAULT_PRODUCTS;
+// ==================== STATE ====================
+
+let productsCache = [];
+let ordersCache = [];
+let unsubscribeProducts = null;
+let unsubscribeOrders = null;
+
+// ==================== DATA LAYER — FIRESTORE ====================
+
+const productsRef = db ? db.collection('products') : null;
+const ordersRef = db ? db.collection('orders') : null;
+
+function initRealtimeListeners() {
+  if (!db) {
+    console.warn('Firebase not available');
+    return;
+  }
+
+  // Real-time products listener
+  unsubscribeProducts = productsRef.orderBy('name').onSnapshot(async (snapshot) => {
+    if (snapshot.empty) {
+      // Seed default products on first load
+      console.log('Seeding default products...');
+      const batch = db.batch();
+      DEFAULT_PRODUCTS.forEach(p => {
+        batch.set(productsRef.doc(p.id), { ...p, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+      });
+      await batch.commit();
+      return;
+    }
+
+    productsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    renderCatalog();
+    updateCartBar();
+    if (document.getElementById('admin-dashboard') && !document.getElementById('admin-dashboard').classList.contains('hidden')) {
+      renderStockCards();
+    }
+  }, (error) => {
+    console.error('Products listener error:', error);
+  });
+
+  // Real-time orders listener
+  unsubscribeOrders = ordersRef.orderBy('createdAt', 'desc').onSnapshot((snapshot) => {
+    ordersCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    if (document.getElementById('admin-dashboard') && !document.getElementById('admin-dashboard').classList.contains('hidden')) {
+      renderOrders();
+      updateStats();
+    }
+  }, (error) => {
+    console.error('Orders listener error:', error);
+  });
 }
 
-function saveProducts(products) {
-  localStorage.setItem(STORAGE_KEYS.products, JSON.stringify(products));
+function getProducts() {
+  return productsCache;
 }
 
 function getOrders() {
-  const stored = localStorage.getItem(STORAGE_KEYS.orders);
-  return stored ? JSON.parse(stored) : [];
+  return ordersCache;
 }
 
-function saveOrders(orders) {
-  localStorage.setItem(STORAGE_KEYS.orders, JSON.stringify(orders));
-}
+// Cart stays in localStorage (per-device)
+const STORAGE_KEYS = {
+  cart: 'mff_cart',
+  adminAuth: 'mff_admin_auth'
+};
 
 function getCart() {
   const stored = localStorage.getItem(STORAGE_KEYS.cart);
@@ -63,19 +94,15 @@ function saveCart(cart) {
   localStorage.setItem(STORAGE_KEYS.cart, JSON.stringify(cart));
 }
 
-function getNextProductId() {
-  const products = getProducts();
-  const maxId = products.reduce((max, p) => Math.max(max, parseInt(p.id) || 0), 0);
-  return String(maxId + 1);
-}
-
 // ==================== PRODUCT CATALOG (BUYER) ====================
 
 function renderCatalog() {
-  const products = getProducts().filter(p => p.available);
+  const products = productsCache.filter(p => p.available);
   const grid = document.getElementById('product-grid');
   const empty = document.getElementById('empty-catalog');
   const cart = getCart();
+
+  if (!grid) return;
 
   if (products.length === 0) {
     grid.classList.add('hidden');
@@ -89,10 +116,11 @@ function renderCatalog() {
   grid.innerHTML = products.map((p, i) => {
     const colorClass = PRODUCT_COLORS[i % PRODUCT_COLORS.length];
     const inCart = cart[p.id] || 0;
-    const stockClass = p.stock === 0 ? 'out' : p.stock <= p.lowStockThreshold ? 'low' : 'available';
-    const stockText = p.stock === 0 ? 'Out of Stock' : p.stock <= p.lowStockThreshold ? `Only ${p.stock} left!` : `${p.stock} available`;
-    const stockPercent = p.maxStock > 0 ? Math.min(100, (p.stock / p.maxStock) * 100) : 0;
-    const barColor = p.stock <= p.lowStockThreshold ? 'bg-orange-400' : 'bg-leaf';
+    const stockClass = p.stock === 0 ? 'out' : p.stock <= (p.lowStockThreshold || 5) ? 'low' : 'available';
+    const stockText = p.stock === 0 ? 'Out of Stock' : p.stock <= (p.lowStockThreshold || 5) ? `Only ${p.stock} left!` : `${p.stock} available`;
+    const maxStock = p.maxStock || p.stock || 1;
+    const stockPercent = maxStock > 0 ? Math.min(100, (p.stock / maxStock) * 100) : 0;
+    const barColor = p.stock <= (p.lowStockThreshold || 5) ? 'bg-orange-400' : 'bg-leaf';
     const disabled = p.stock === 0 ? 'disabled' : '';
 
     const imageBlock = p.photoUrl
@@ -135,8 +163,7 @@ function renderCatalog() {
 // ==================== CART MANAGEMENT ====================
 
 function updateCart(productId, delta) {
-  const products = getProducts();
-  const product = products.find(p => p.id === productId);
+  const product = productsCache.find(p => p.id === productId);
   if (!product) return;
 
   const cart = getCart();
@@ -162,14 +189,13 @@ function updateCart(productId, delta) {
 
 function updateCartBar() {
   const cart = getCart();
-  const products = getProducts();
   const bar = document.getElementById('cart-bar');
 
   let count = 0;
   let total = 0;
 
   Object.keys(cart).forEach(id => {
-    const product = products.find(p => p.id === id);
+    const product = productsCache.find(p => p.id === id);
     if (product) {
       count += cart[id];
       total += cart[id] * product.price;
@@ -190,14 +216,13 @@ function updateCartBar() {
 
 function showOrderForm() {
   const cart = getCart();
-  const products = getProducts();
   const summary = document.getElementById('order-summary');
 
   let total = 0;
   let items = [];
 
   Object.keys(cart).forEach(id => {
-    const product = products.find(p => p.id === id);
+    const product = productsCache.find(p => p.id === id);
     if (product && cart[id] > 0) {
       const subtotal = cart[id] * product.price;
       total += subtotal;
@@ -221,7 +246,6 @@ function showOrderForm() {
   document.getElementById('order-modal').classList.remove('hidden');
   document.getElementById('order-modal').classList.add('flex');
 
-  // Set min date to today
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('cust-date').min = today;
 }
@@ -231,7 +255,7 @@ function closeOrderForm() {
   document.getElementById('order-modal').classList.remove('flex');
 }
 
-function submitOrder(e) {
+async function submitOrder(e) {
   e.preventDefault();
 
   const name = document.getElementById('cust-name').value.trim();
@@ -242,12 +266,11 @@ function submitOrder(e) {
   const notes = document.getElementById('cust-notes').value.trim();
 
   const cart = getCart();
-  const products = getProducts();
   let items = [];
   let total = 0;
 
   Object.keys(cart).forEach(id => {
-    const product = products.find(p => p.id === id);
+    const product = productsCache.find(p => p.id === id);
     if (product && cart[id] > 0) {
       const subtotal = cart[id] * product.price;
       total += subtotal;
@@ -263,9 +286,7 @@ function submitOrder(e) {
 
   if (items.length === 0) return;
 
-  // Create order
   const order = {
-    id: 'ORD-' + Date.now(),
     customerName: name,
     phone,
     address,
@@ -275,43 +296,47 @@ function submitOrder(e) {
     items,
     total,
     status: 'new',
-    createdAt: new Date().toISOString()
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
   };
 
-  // Save order
-  const orders = getOrders();
-  orders.unshift(order);
-  saveOrders(orders);
+  try {
+    // Save order to Firestore
+    await ordersRef.add(order);
 
-  // Decrement stock
-  items.forEach(item => {
-    const product = products.find(p => p.id === item.productId);
-    if (product) {
-      product.stock = Math.max(0, product.stock - item.qty);
-    }
-  });
-  saveProducts(products);
+    // Decrement stock atomically in Firestore
+    const batch = db.batch();
+    items.forEach(item => {
+      const product = productsCache.find(p => p.id === item.productId);
+      if (product) {
+        batch.update(productsRef.doc(item.productId), {
+          stock: Math.max(0, product.stock - item.qty),
+          maxStock: product.maxStock || product.stock
+        });
+      }
+    });
+    await batch.commit();
 
-  // Build WhatsApp message
-  const itemList = items.map(i => `  • ${i.name} × ${i.qty} (₹${i.subtotal})`).join('\n');
-  const waMessage = `🌿 *New Order — Ainora Mane Thota*\n\n*${name}* (${phone})\n\n*Items:*\n${itemList}\n\n*Total: ₹${total}*\n\n*Delivery:* ${date} | ${time}\n*Address:* ${address}${notes ? '\n*Notes:* ' + notes : ''}`;
-  const waUrl = `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(waMessage)}`;
+    // Build WhatsApp message
+    const itemList = items.map(i => `  • ${i.name} × ${i.qty} (₹${i.subtotal})`).join('\n');
+    const waMessage = `🌿 *New Order — Ainora Mane Thota*\n\n*${name}* (${phone})\n\n*Items:*\n${itemList}\n\n*Total: ₹${total}*\n\n*Delivery:* ${date} | ${time}\n*Address:* ${address}${notes ? '\n*Notes:* ' + notes : ''}`;
+    const waUrl = `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(waMessage)}`;
 
-  // Close order form, show success
-  closeOrderForm();
+    // Show success
+    closeOrderForm();
+    document.getElementById('success-name').textContent = name;
+    document.getElementById('whatsapp-btn').href = waUrl;
+    document.getElementById('success-modal').classList.remove('hidden');
+    document.getElementById('success-modal').classList.add('flex');
 
-  document.getElementById('success-name').textContent = name;
-  document.getElementById('whatsapp-btn').href = waUrl;
-  document.getElementById('success-modal').classList.remove('hidden');
-  document.getElementById('success-modal').classList.add('flex');
+    // Clear cart
+    saveCart({});
+    updateCartBar();
+    document.getElementById('order-form').reset();
 
-  // Clear cart
-  saveCart({});
-  updateCartBar();
-  renderCatalog();
-
-  // Reset form
-  document.getElementById('order-form').reset();
+  } catch (err) {
+    console.error('Order submission error:', err);
+    showToast('Failed to place order. Please try again.');
+  }
 }
 
 function closeSuccess() {
@@ -368,12 +393,16 @@ function loadAdminDashboard() {
 
 // Stats
 function updateStats() {
-  const orders = getOrders();
+  const orders = ordersCache;
   const today = new Date().toISOString().split('T')[0];
 
   document.getElementById('stat-total-orders').textContent = orders.length;
   document.getElementById('stat-total-revenue').textContent = orders.reduce((sum, o) => sum + (o.total || 0), 0);
-  document.getElementById('stat-today-orders').textContent = orders.filter(o => o.createdAt && o.createdAt.startsWith(today)).length;
+  document.getElementById('stat-today-orders').textContent = orders.filter(o => {
+    if (!o.createdAt) return false;
+    const d = o.createdAt.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
+    return d.toISOString().startsWith(today);
+  }).length;
   document.getElementById('stat-pending-orders').textContent = orders.filter(o => o.status === 'new').length;
 }
 
@@ -391,10 +420,10 @@ function switchAdminTab(tab) {
 // ==================== STOCK MANAGEMENT ====================
 
 function renderStockCards() {
-  const products = getProducts();
   const grid = document.getElementById('admin-stock-grid');
+  if (!grid) return;
 
-  grid.innerHTML = products.map(p => {
+  grid.innerHTML = productsCache.map(p => {
     const imageSrc = p.photoUrl || '';
     const photoDisplay = imageSrc
       ? `<img src="${imageSrc}" alt="${p.name}" class="w-full h-full object-cover" />`
@@ -439,7 +468,7 @@ function renderStockCards() {
         <div class="mt-2 flex items-center justify-between">
           <div class="flex items-center gap-1">
             <span class="text-soil/40 text-xs">Low stock alert:</span>
-            <input type="number" value="${p.lowStockThreshold}" min="0" class="w-12 border border-soil/15 rounded px-2 py-1 text-xs bg-cream focus:outline-none focus:ring-1 focus:ring-leaf/50 threshold-input" data-id="${p.id}" />
+            <input type="number" value="${p.lowStockThreshold || 5}" min="0" class="w-12 border border-soil/15 rounded px-2 py-1 text-xs bg-cream focus:outline-none focus:ring-1 focus:ring-leaf/50 threshold-input" data-id="${p.id}" />
           </div>
           <button onclick="saveSingleStock('${p.id}')" class="text-leaf hover:text-leaf-dark text-xs font-semibold">Save</button>
         </div>
@@ -448,67 +477,105 @@ function renderStockCards() {
   }).join('');
 }
 
-function adjustStock(productId, delta) {
-  const products = getProducts();
-  const product = products.find(p => p.id === productId);
+async function adjustStock(productId, delta) {
+  const product = productsCache.find(p => p.id === productId);
   if (!product) return;
 
-  product.stock = Math.max(0, product.stock + delta);
-  if (product.stock > product.maxStock) product.maxStock = product.stock;
-  saveProducts(products);
+  const newStock = Math.max(0, product.stock + delta);
+  const newMaxStock = Math.max(product.maxStock || 0, newStock);
 
-  // Update the input
+  // Optimistic update
+  product.stock = newStock;
+  product.maxStock = newMaxStock;
+
+  try {
+    await productsRef.doc(productId).update({
+      stock: newStock,
+      maxStock: newMaxStock
+    });
+  } catch (err) {
+    console.error('Stock update error:', err);
+    showToast('Failed to update stock');
+  }
+
   const card = document.querySelector(`.admin-stock-card[data-product-id="${productId}"]`);
   if (card) {
     const input = card.querySelector('.stock-input');
-    if (input) input.value = product.stock;
+    if (input) input.value = newStock;
   }
 }
 
-function setStock(productId, value) {
-  const products = getProducts();
-  const product = products.find(p => p.id === productId);
+async function setStock(productId, value) {
+  const product = productsCache.find(p => p.id === productId);
   if (!product) return;
 
-  product.stock = Math.max(0, parseInt(value) || 0);
-  if (product.stock > product.maxStock) product.maxStock = product.stock;
-  saveProducts(products);
+  const newStock = Math.max(0, parseInt(value) || 0);
+  const newMaxStock = Math.max(product.maxStock || 0, newStock);
+
+  product.stock = newStock;
+  product.maxStock = newMaxStock;
+
+  try {
+    await productsRef.doc(productId).update({
+      stock: newStock,
+      maxStock: newMaxStock
+    });
+  } catch (err) {
+    console.error('Stock update error:', err);
+    showToast('Failed to update stock');
+  }
 }
 
-function toggleAvailable(productId, el) {
-  const products = getProducts();
-  const product = products.find(p => p.id === productId);
+async function toggleAvailable(productId, el) {
+  const product = productsCache.find(p => p.id === productId);
   if (!product) return;
 
-  product.available = !product.available;
-  saveProducts(products);
+  const newVal = !product.available;
+  product.available = newVal;
 
-  el.classList.toggle('active', product.available);
-  const label = el.previousElementSibling;
-  if (label) label.textContent = product.available ? 'Visible' : 'Hidden';
+  try {
+    await productsRef.doc(productId).update({ available: newVal });
+    el.classList.toggle('active', newVal);
+    const label = el.previousElementSibling;
+    if (label) label.textContent = newVal ? 'Visible' : 'Hidden';
+  } catch (err) {
+    console.error('Toggle error:', err);
+    showToast('Failed to update');
+  }
 }
 
-function saveAllStock() {
-  const products = getProducts();
+async function saveAllStock() {
+  try {
+    const batch = db.batch();
 
-  // Read price and threshold inputs
-  document.querySelectorAll('.price-input').forEach(input => {
-    const product = products.find(p => p.id === input.dataset.id);
-    if (product) product.price = Math.max(0, parseInt(input.value) || 0);
-  });
+    document.querySelectorAll('.price-input').forEach(input => {
+      const product = productsCache.find(p => p.id === input.dataset.id);
+      if (product) {
+        const newPrice = Math.max(0, parseInt(input.value) || 0);
+        product.price = newPrice;
+        batch.update(productsRef.doc(input.dataset.id), { price: newPrice });
+      }
+    });
 
-  document.querySelectorAll('.threshold-input').forEach(input => {
-    const product = products.find(p => p.id === input.dataset.id);
-    if (product) product.lowStockThreshold = Math.max(0, parseInt(input.value) || 0);
-  });
+    document.querySelectorAll('.threshold-input').forEach(input => {
+      const product = productsCache.find(p => p.id === input.dataset.id);
+      if (product) {
+        const newThreshold = Math.max(0, parseInt(input.value) || 5);
+        product.lowStockThreshold = newThreshold;
+        batch.update(productsRef.doc(input.dataset.id), { lowStockThreshold: newThreshold });
+      }
+    });
 
-  saveProducts(products);
-  showToast('Stock updated! Buyers can see the changes now');
+    await batch.commit();
+    showToast('Stock updated! Buyers can see the changes now');
+  } catch (err) {
+    console.error('Save all error:', err);
+    showToast('Failed to save changes');
+  }
 }
 
-function saveSingleStock(productId) {
-  const products = getProducts();
-  const product = products.find(p => p.id === productId);
+async function saveSingleStock(productId) {
+  const product = productsCache.find(p => p.id === productId);
   if (!product) return;
 
   const card = document.querySelector(`.admin-stock-card[data-product-id="${productId}"]`);
@@ -516,11 +583,19 @@ function saveSingleStock(productId) {
     const priceInput = card.querySelector('.price-input');
     const thresholdInput = card.querySelector('.threshold-input');
     if (priceInput) product.price = Math.max(0, parseInt(priceInput.value) || 0);
-    if (thresholdInput) product.lowStockThreshold = Math.max(0, parseInt(thresholdInput.value) || 0);
+    if (thresholdInput) product.lowStockThreshold = Math.max(0, parseInt(thresholdInput.value) || 5);
   }
 
-  saveProducts(products);
-  showToast(`${product.name} updated`);
+  try {
+    await productsRef.doc(productId).update({
+      price: product.price,
+      lowStockThreshold: product.lowStockThreshold
+    });
+    showToast(`${product.name} updated`);
+  } catch (err) {
+    console.error('Save error:', err);
+    showToast('Failed to save');
+  }
 }
 
 // ==================== ADD PRODUCT ====================
@@ -532,7 +607,6 @@ function toggleAddProduct() {
   arrow.style.transform = form.classList.contains('hidden') ? '' : 'rotate(180deg)';
 }
 
-// Preview photo on select
 document.addEventListener('DOMContentLoaded', () => {
   const photoInput = document.getElementById('new-photo');
   if (photoInput) {
@@ -568,10 +642,7 @@ async function addProduct() {
     return;
   }
 
-  const id = getNextProductId();
   let photoUrl = null;
-
-  // Handle photo upload (compress and store as data URL for local storage)
   if (photoFile) {
     try {
       photoUrl = await compressAndStoreImage(photoFile);
@@ -580,37 +651,36 @@ async function addProduct() {
     }
   }
 
-  const product = {
-    id,
-    name,
-    kannada: kannada || name,
-    emoji,
-    photoUrl,
-    unit,
-    price,
-    stock,
-    maxStock: stock,
-    lowStockThreshold: 5,
-    deliveryDays: delivery,
-    available: true,
-    createdAt: new Date().toISOString()
-  };
+  try {
+    await productsRef.add({
+      name,
+      kannada: kannada || name,
+      emoji,
+      photoUrl,
+      unit,
+      price,
+      stock,
+      maxStock: stock,
+      lowStockThreshold: 5,
+      deliveryDays: delivery,
+      available: true,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
 
-  const products = getProducts();
-  products.push(product);
-  saveProducts(products);
+    // Reset form
+    document.getElementById('new-name').value = '';
+    document.getElementById('new-kannada').value = '';
+    document.getElementById('new-emoji').value = '';
+    document.getElementById('new-price').value = '';
+    document.getElementById('new-stock').value = '';
+    document.getElementById('new-photo').value = '';
+    document.getElementById('new-photo-preview').classList.add('hidden');
 
-  // Reset form
-  document.getElementById('new-name').value = '';
-  document.getElementById('new-kannada').value = '';
-  document.getElementById('new-emoji').value = '';
-  document.getElementById('new-price').value = '';
-  document.getElementById('new-stock').value = '';
-  document.getElementById('new-photo').value = '';
-  document.getElementById('new-photo-preview').classList.add('hidden');
-
-  renderStockCards();
-  showToast(`${name} added to catalog`);
+    showToast(`${name} added to catalog`);
+  } catch (err) {
+    console.error('Add product error:', err);
+    showToast('Failed to add product');
+  }
 }
 
 function compressAndStoreImage(file) {
@@ -625,21 +695,14 @@ function compressAndStoreImage(file) {
         let h = img.height;
 
         if (w > maxSize || h > maxSize) {
-          if (w > h) {
-            h = (h / w) * maxSize;
-            w = maxSize;
-          } else {
-            w = (w / h) * maxSize;
-            h = maxSize;
-          }
+          if (w > h) { h = (h / w) * maxSize; w = maxSize; }
+          else { w = (w / h) * maxSize; h = maxSize; }
         }
 
         canvas.width = w;
         canvas.height = h;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, w, h);
-
-        // Compress to JPEG at 0.7 quality
         const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
         resolve(dataUrl);
       };
@@ -654,8 +717,7 @@ function compressAndStoreImage(file) {
 // ==================== EDIT PRODUCT ====================
 
 function openEditModal(productId) {
-  const products = getProducts();
-  const product = products.find(p => p.id === productId);
+  const product = productsCache.find(p => p.id === productId);
   if (!product) return;
 
   document.getElementById('edit-id').value = product.id;
@@ -675,7 +737,6 @@ function openEditModal(productId) {
   }
 
   document.getElementById('edit-photo').value = '';
-
   document.getElementById('edit-modal').classList.remove('hidden');
   document.getElementById('edit-modal').classList.add('flex');
 }
@@ -687,52 +748,58 @@ function closeEditModal() {
 
 async function saveEditProduct() {
   const id = document.getElementById('edit-id').value;
-  const products = getProducts();
-  const product = products.find(p => p.id === id);
+  const product = productsCache.find(p => p.id === id);
   if (!product) return;
 
-  product.name = document.getElementById('edit-name').value.trim() || product.name;
-  product.kannada = document.getElementById('edit-kannada').value.trim() || product.kannada;
-  product.emoji = document.getElementById('edit-emoji').value.trim() || product.emoji;
-  product.unit = document.getElementById('edit-unit').value;
-  product.price = parseInt(document.getElementById('edit-price').value) || product.price;
-  product.deliveryDays = document.getElementById('edit-delivery').value;
+  const updates = {
+    name: document.getElementById('edit-name').value.trim() || product.name,
+    kannada: document.getElementById('edit-kannada').value.trim() || product.kannada,
+    emoji: document.getElementById('edit-emoji').value.trim() || product.emoji,
+    unit: document.getElementById('edit-unit').value,
+    price: parseInt(document.getElementById('edit-price').value) || product.price,
+    deliveryDays: document.getElementById('edit-delivery').value
+  };
 
-  // Handle new photo
   const photoFile = document.getElementById('edit-photo').files[0];
   if (photoFile) {
     try {
-      product.photoUrl = await compressAndStoreImage(photoFile);
+      updates.photoUrl = await compressAndStoreImage(photoFile);
     } catch (err) {
       console.error('Photo compression failed:', err);
     }
   }
 
-  saveProducts(products);
-  closeEditModal();
-  renderStockCards();
-  showToast(`${product.name} updated`);
+  try {
+    await productsRef.doc(id).update(updates);
+    closeEditModal();
+    showToast(`${updates.name} updated`);
+  } catch (err) {
+    console.error('Update product error:', err);
+    showToast('Failed to update product');
+  }
 }
 
-function deleteProduct() {
+async function deleteProduct() {
   const id = document.getElementById('edit-id').value;
-  const products = getProducts();
-  const product = products.find(p => p.id === id);
+  const product = productsCache.find(p => p.id === id);
   if (!product) return;
 
   if (!confirm(`Delete "${product.name}"? This cannot be undone.`)) return;
 
-  const updated = products.filter(p => p.id !== id);
-  saveProducts(updated);
-  closeEditModal();
-  renderStockCards();
-  showToast(`${product.name} deleted`);
+  try {
+    await productsRef.doc(id).delete();
+    closeEditModal();
+    showToast(`${product.name} deleted`);
+  } catch (err) {
+    console.error('Delete product error:', err);
+    showToast('Failed to delete product');
+  }
 }
 
 // ==================== ORDERS TABLE ====================
 
 function renderOrders() {
-  let orders = getOrders();
+  let orders = [...ordersCache];
   const statusFilter = document.getElementById('filter-status')?.value || 'all';
   const dateFrom = document.getElementById('filter-date-from')?.value;
   const dateTo = document.getElementById('filter-date-to')?.value;
@@ -751,6 +818,8 @@ function renderOrders() {
 
   const tbody = document.getElementById('orders-table-body');
   const empty = document.getElementById('empty-orders');
+
+  if (!tbody) return;
 
   if (orders.length === 0) {
     tbody.innerHTML = '';
@@ -794,52 +863,42 @@ function renderOrders() {
   updateStats();
 }
 
-function updateOrderStatus(orderId, status) {
-  const orders = getOrders();
-  const order = orders.find(o => o.id === orderId);
-  if (order) {
-    order.status = status;
-    saveOrders(orders);
-    renderOrders();
+async function updateOrderStatus(orderId, status) {
+  try {
+    await ordersRef.doc(orderId).update({ status });
     showToast(`Order marked as ${status}`);
+  } catch (err) {
+    console.error('Status update error:', err);
+    showToast('Failed to update status');
   }
 }
 
 // ==================== CSV EXPORT ====================
 
 function exportCSV() {
-  const orders = getOrders();
+  const orders = ordersCache;
   if (orders.length === 0) {
     showToast('No orders to export');
     return;
   }
 
-  const headers = ['Name', 'Phone', 'Address', 'Items', 'Total', 'Delivery Date', 'Delivery Time', 'Status', 'Order Date'];
+  const headers = ['Name', 'Phone', 'Address', 'Items', 'Total', 'Delivery Date', 'Delivery Time', 'Status'];
   const rows = orders.map(o => {
     const items = o.items.map(i => `${i.name} x${i.qty}`).join('; ');
     return [
-      o.customerName,
-      o.phone,
-      `"${o.address}"`,
-      `"${items}"`,
-      o.total,
-      o.deliveryDate,
-      o.deliveryTime,
-      o.status,
-      o.createdAt ? o.createdAt.split('T')[0] : ''
+      o.customerName, o.phone, `"${o.address}"`, `"${items}"`,
+      o.total, o.deliveryDate, o.deliveryTime, o.status
     ];
   });
 
   let csv = headers.join(',') + '\n';
-  rows.forEach(r => {
-    csv += r.join(',') + '\n';
-  });
+  rows.forEach(r => { csv += r.join(',') + '\n'; });
 
   const blob = new Blob([csv], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `magadi-farm-orders-${new Date().toISOString().split('T')[0]}.csv`;
+  a.download = `ainora-mane-thota-orders-${new Date().toISOString().split('T')[0]}.csv`;
   a.click();
   URL.revokeObjectURL(url);
   showToast('Orders exported as CSV');
@@ -857,6 +916,9 @@ function showToast(msg) {
 // ==================== INIT ====================
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Start real-time listeners
+  initRealtimeListeners();
+
   // Check if admin was previously logged in
   if (localStorage.getItem(STORAGE_KEYS.adminAuth) === 'true') {
     document.getElementById('buyer-view').classList.add('hidden');
@@ -864,12 +926,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('admin-login').classList.add('hidden');
     document.getElementById('admin-dashboard').classList.remove('hidden');
     loadAdminDashboard();
-  } else {
-    renderCatalog();
-    updateCartBar();
   }
 
-  // Hash-based routing
   if (window.location.hash === '#admin') {
     showAdminLogin(new Event('click'));
   }

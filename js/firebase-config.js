@@ -1,37 +1,30 @@
-// Firebase Configuration for Magadi Farm Fresh
-// Replace these with your actual Firebase project credentials
+// Firebase Configuration for Ainora Mane Thota
 
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "000000000000",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAv-Mc6IuvjipqTxXRLbR-60VQhij8QjSM",
+  authDomain: "ainora-mane-thota.firebaseapp.com",
+  projectId: "ainora-mane-thota",
+  storageBucket: "ainora-mane-thota.firebasestorage.app",
+  messagingSenderId: "205286096690",
+  appId: "1:205286096690:web:d8594d8a45bc9bebf6a12b"
 };
 
 // Configuration
 const CONFIG = {
-  whatsappNumber: '917892325072', // Farm owner's WhatsApp number with country code
-  adminPassword: 'magadi2025',    // Admin dashboard password
+  whatsappNumber: '917892325072',
+  adminPassword: 'magadi2025',
   currency: '₹'
 };
 
-// Initialize Firebase (will use local storage fallback if Firebase not configured)
+// Initialize Firebase
 let db = null;
 let storage = null;
-let useFirebase = false;
 
 try {
-  if (firebaseConfig.apiKey !== 'YOUR_API_KEY') {
-    firebase.initializeApp(firebaseConfig);
-    db = firebase.firestore();
-    storage = firebase.storage();
-    useFirebase = true;
-    console.log('Firebase initialized');
-  } else {
-    console.log('Firebase not configured — using local storage');
-  }
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+  storage = firebase.storage();
+  console.log('Firebase initialized');
 } catch (e) {
-  console.log('Firebase init failed — using local storage fallback');
+  console.error('Firebase init failed:', e);
 }
