@@ -24,6 +24,40 @@ body {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+/* Product badge */
+.product-badge {
+  position: absolute;
+  top: 12px;
+  left: 0;
+  z-index: 2;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: white;
+  border-radius: 0 999px 999px 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.badge-limited {
+  background: linear-gradient(135deg, #c4622d, #e07a3a);
+}
+
+.badge-new {
+  background: linear-gradient(135deg, #4a7c59, #6b9e7a);
+}
+
+.badge-best {
+  background: linear-gradient(135deg, #d4a017, #e8b930);
+}
+
+.badge-seasonal {
+  background: linear-gradient(135deg, #7c3aed, #9f67ff);
+}
+
+.badge-soldout {
+  background: linear-gradient(135deg, #c83232, #e04848);
+}
+
 .product-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(61, 43, 31, 0.1);

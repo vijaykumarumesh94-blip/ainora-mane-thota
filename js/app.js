@@ -3,13 +3,13 @@
 // ==================== DEFAULT PRODUCTS ====================
 
 const DEFAULT_PRODUCTS = [
-  { id: '1', name: 'Coconut', kannada: 'Thenginakayi', emoji: '🥥', photoUrl: null, unit: 'piece', price: 40, stock: 10, maxStock: 10, lowStockThreshold: 5, deliveryDays: '2-3 days', available: true },
-  { id: '2', name: 'Jackfruit', kannada: 'Halasina Hannu', emoji: '🍈', photoUrl: null, unit: 'piece', price: 300, stock: 5, maxStock: 5, lowStockThreshold: 2, deliveryDays: '2-3 days', available: true },
-  { id: '3', name: 'Lemon Grass', kannada: 'Nimbe Hullu', emoji: '🌿', photoUrl: null, unit: 'bundle', price: 60, stock: 20, maxStock: 20, lowStockThreshold: 5, deliveryDays: '1-2 days', available: true },
-  { id: '4', name: 'Curry Leaves (Karibevu)', kannada: 'Karibevu', emoji: '🍃', photoUrl: null, unit: 'bundle', price: 20, stock: 10, maxStock: 10, lowStockThreshold: 3, deliveryDays: '1-2 days', available: true },
-  { id: '5', name: 'Coconut Oil', kannada: 'Thengi Enne', emoji: '🫙', photoUrl: null, unit: '250ml bottle', price: 150, stock: 3, maxStock: 10, lowStockThreshold: 3, deliveryDays: '3-5 days', available: true },
-  { id: '6', name: 'Cherry Tomato', kannada: 'Tomato', emoji: '🍅', photoUrl: null, unit: '100g pack', price: 40, stock: 10, maxStock: 15, lowStockThreshold: 5, deliveryDays: '1-2 days', available: true },
-  { id: '7', name: 'Malabar Spinach', kannada: 'Basale Soppu', emoji: '🥬', photoUrl: null, unit: 'bundle', price: 25, stock: 10, maxStock: 10, lowStockThreshold: 3, deliveryDays: '1-2 days', available: true }
+  { id: '1', name: 'Coconut', kannada: 'Thenginakayi', emoji: '🥥', photoUrl: null, unit: 'piece', price: 40, stock: 10, maxStock: 10, lowStockThreshold: 5, deliveryDays: '2-3 days', available: true, sortOrder: 1, badge: '' },
+  { id: '2', name: 'Jackfruit', kannada: 'Halasina Hannu', emoji: '🍈', photoUrl: null, unit: 'piece', price: 300, stock: 5, maxStock: 5, lowStockThreshold: 2, deliveryDays: '2-3 days', available: true, sortOrder: 2, badge: '' },
+  { id: '3', name: 'Lemon Grass', kannada: 'Nimbe Hullu', emoji: '🌿', photoUrl: null, unit: 'bundle', price: 60, stock: 20, maxStock: 20, lowStockThreshold: 5, deliveryDays: '1-2 days', available: true, sortOrder: 3, badge: '' },
+  { id: '4', name: 'Curry Leaves (Karibevu)', kannada: 'Karibevu', emoji: '🍃', photoUrl: null, unit: 'bundle', price: 20, stock: 10, maxStock: 10, lowStockThreshold: 3, deliveryDays: '1-2 days', available: true, sortOrder: 4, badge: '' },
+  { id: '5', name: 'Coconut Oil', kannada: 'Thengi Enne', emoji: '🫙', photoUrl: null, unit: '250ml bottle', price: 150, stock: 3, maxStock: 10, lowStockThreshold: 3, deliveryDays: '3-5 days', available: true, sortOrder: 5, badge: '' },
+  { id: '6', name: 'Cherry Tomato', kannada: 'Tomato', emoji: '🍅', photoUrl: null, unit: '100g pack', price: 40, stock: 10, maxStock: 15, lowStockThreshold: 5, deliveryDays: '1-2 days', available: true, sortOrder: 6, badge: '' },
+  { id: '7', name: 'Malabar Spinach', kannada: 'Basale Soppu', emoji: '🥬', photoUrl: null, unit: 'bundle', price: 25, stock: 10, maxStock: 10, lowStockThreshold: 3, deliveryDays: '1-2 days', available: true, sortOrder: 7, badge: '' }
 ];
 
 const PRODUCT_COLORS = [
@@ -17,6 +17,19 @@ const PRODUCT_COLORS = [
   'bg-orange-100', 'bg-red-100', 'bg-teal-100', 'bg-yellow-100',
   'bg-cyan-100', 'bg-rose-100'
 ];
+
+const BADGE_OPTIONS = ['', 'Limited stock', 'New this week', 'Best seller', 'Seasonal', 'Sold out soon'];
+
+function getBadgeClass(badge) {
+  switch (badge) {
+    case 'Limited stock': return 'badge-limited';
+    case 'New this week': return 'badge-new';
+    case 'Best seller': return 'badge-best';
+    case 'Seasonal': return 'badge-seasonal';
+    case 'Sold out soon': return 'badge-soldout';
+    default: return 'badge-default';
+  }
+}
 
 // ==================== STATE ====================
 
@@ -97,7 +110,7 @@ function saveCart(cart) {
 // ==================== PRODUCT CATALOG (BUYER) ====================
 
 function renderCatalog() {
-  const products = productsCache.filter(p => p.available);
+  const products = productsCache.filter(p => p.available).sort((a, b) => (a.sortOrder || 999) - (b.sortOrder || 999));
   const grid = document.getElementById('product-grid');
   const empty = document.getElementById('empty-catalog');
   const cart = getCart();
@@ -128,7 +141,8 @@ function renderCatalog() {
       : `<div class="emoji-fallback">${p.emoji}</div>`;
 
     return `
-      <div class="product-card bg-white rounded-2xl overflow-hidden shadow-sm">
+      <div class="product-card bg-white rounded-2xl overflow-hidden shadow-sm relative">
+        ${p.badge ? `<div class="product-badge ${getBadgeClass(p.badge)}">${p.badge}</div>` : ''}
         <div class="product-image ${p.photoUrl ? '' : colorClass}">
           ${imageBlock}
         </div>
@@ -423,14 +437,32 @@ function renderStockCards() {
   const grid = document.getElementById('admin-stock-grid');
   if (!grid) return;
 
-  grid.innerHTML = productsCache.map(p => {
+  const sorted = [...productsCache].sort((a, b) => (a.sortOrder || 999) - (b.sortOrder || 999));
+
+  grid.innerHTML = sorted.map((p, idx) => {
     const imageSrc = p.photoUrl || '';
     const photoDisplay = imageSrc
       ? `<img src="${imageSrc}" alt="${p.name}" class="w-full h-full object-cover" />`
       : `<span class="text-3xl">${p.emoji}</span>`;
 
+    const badgeOptionsHtml = BADGE_OPTIONS.map(b =>
+      `<option value="${b}" ${p.badge === b ? 'selected' : ''}>${b || 'No badge'}</option>`
+    ).join('');
+
     return `
       <div class="admin-stock-card" data-product-id="${p.id}">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-1">
+            <button onclick="moveProduct('${p.id}', -1)" class="text-soil/40 hover:text-soil text-sm px-1" title="Move up" ${idx === 0 ? 'disabled style="opacity:0.3"' : ''}>▲</button>
+            <button onclick="moveProduct('${p.id}', 1)" class="text-soil/40 hover:text-soil text-sm px-1" title="Move down" ${idx === sorted.length - 1 ? 'disabled style="opacity:0.3"' : ''}>▼</button>
+          </div>
+          <div class="flex items-center gap-2">
+            <select onchange="setBadge('${p.id}', this.value)" class="text-xs border border-soil/15 rounded px-2 py-1 bg-cream focus:outline-none focus:ring-1 focus:ring-leaf/50">
+              ${badgeOptionsHtml}
+            </select>
+            <button onclick="openEditModal('${p.id}')" class="text-soil/30 hover:text-soil text-sm p-1" title="Edit">✏️</button>
+          </div>
+        </div>
         <div class="flex items-start gap-3 mb-3">
           <div class="w-14 h-14 rounded-lg bg-cream flex items-center justify-center overflow-hidden flex-shrink-0">
             ${photoDisplay}
@@ -443,7 +475,6 @@ function renderStockCards() {
               <span class="text-soil/40 text-xs">${p.unit}</span>
             </div>
           </div>
-          <button onclick="openEditModal('${p.id}')" class="text-soil/30 hover:text-soil text-sm p-1" title="Edit">✏️</button>
         </div>
         <div class="flex items-center gap-2 mb-3">
           <div class="stepper">
@@ -475,6 +506,45 @@ function renderStockCards() {
       </div>
     `;
   }).join('');
+}
+
+async function moveProduct(productId, direction) {
+  const sorted = [...productsCache].sort((a, b) => (a.sortOrder || 999) - (b.sortOrder || 999));
+  const currentIdx = sorted.findIndex(p => p.id === productId);
+  const swapIdx = currentIdx + direction;
+
+  if (swapIdx < 0 || swapIdx >= sorted.length) return;
+
+  const current = sorted[currentIdx];
+  const swap = sorted[swapIdx];
+
+  const tempOrder = current.sortOrder || currentIdx + 1;
+  current.sortOrder = swap.sortOrder || swapIdx + 1;
+  swap.sortOrder = tempOrder;
+
+  try {
+    const batch = db.batch();
+    batch.update(productsRef.doc(current.id), { sortOrder: current.sortOrder });
+    batch.update(productsRef.doc(swap.id), { sortOrder: swap.sortOrder });
+    await batch.commit();
+    renderStockCards();
+  } catch (err) {
+    console.error('Move error:', err);
+    showToast('Failed to reorder');
+  }
+}
+
+async function setBadge(productId, badge) {
+  const product = productsCache.find(p => p.id === productId);
+  if (!product) return;
+  product.badge = badge;
+  try {
+    await productsRef.doc(productId).update({ badge });
+    showToast(badge ? `"${badge}" badge set` : 'Badge removed');
+  } catch (err) {
+    console.error('Badge error:', err);
+    showToast('Failed to update badge');
+  }
 }
 
 async function adjustStock(productId, delta) {
