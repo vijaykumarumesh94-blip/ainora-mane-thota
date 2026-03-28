@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ainora Mane Thota — Organic Produce, Delivered</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            soil: '#3d2b1f',
+            terracotta: '#c4622d',
+            leaf: '#4a7c59',
+            cream: '#faf6ef',
+            'leaf-light': '#6b9e7a',
+            'leaf-dark': '#3a6249',
+          },
+          fontFamily: {
+            display: ['Playfair Display', 'serif'],
+            body: ['DM Sans', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="font-body bg-cream text-soil min-h-screen">
+  <!-- ============ BUYER STORE VIEW ============ -->
+  <div id="buyer-view">
+    <!-- Hero Section -->
+    <header id="hero" class="relative bg-soil text-cream">
+      <div class="hero-bg absolute inset-0 opacity-20"></div>
+      <div class="relative max-w-5xl mx-auto px-4 py-12 md:py-20 text-center">
+        <div class="text-5xl mb-4">🌿</div>
+        <h1 class="font-display text-4xl md:text-5xl lg:text-6xl font-bold mb-3">Ainora Mane Thota</h1>
+        <p class="text-lg md:text-xl text-cream/80 italic font-display mb-6">Grown with care. Delivered to your door.</p>
+        <p class="text-sm md:text-base text-cream/60 max-w-md mx-auto mb-8">Organic produce from our family farm in Magadi, Karnataka — delivered fresh to Bengaluru.</p>
+        <div class="flex flex-wrap justify-center gap-4 md:gap-8">
+          <div class="trust-badge flex items-center gap-2 bg-cream/10 rounded-full px-4 py-2 text-sm">
+            <span class="text-lg">🌱</span> No chemicals
+          </div>
+          <div class="trust-badge flex items-center gap-2 bg-cream/10 rounded-full px-4 py-2 text-sm">
+            <span class="text-lg">📅</span> Weekly harvest
+          </div>
+          <div class="trust-badge flex items-center gap-2 bg-cream/10 rounded-full px-4 py-2 text-sm">
+            <span class="text-lg">🚜</span> Direct from farm
+          </div>
+        </div>
+        <a href="#catalog" class="inline-block mt-8 bg-terracotta hover:bg-terracotta/90 text-cream font-semibold px-8 py-3 rounded-full transition-all">Browse Produce ↓</a>
+      </div>
+    </header>
+
+    <!-- Catalog Section -->
+    <section id="catalog" class="max-w-6xl mx-auto px-4 py-10 md:py-16">
+      <h2 class="font-display text-3xl md:text-4xl font-bold text-center mb-2">Fresh This Week</h2>
+      <p class="text-center text-soil/60 mb-8">Harvested from our farm in Magadi</p>
+      <div id="product-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+        <!-- Products rendered by JS -->
+      </div>
+      <div id="empty-catalog" class="hidden text-center py-16 text-soil/50">
+        <div class="text-5xl mb-4">🌾</div>
+        <p class="text-lg">No produce available right now.</p>
+        <p class="text-sm">Check back after our next harvest!</p>
+      </div>
+    </section>
+
+    <!-- Floating Cart Bar -->
+    <div id="cart-bar" class="fixed bottom-0 left-0 right-0 bg-soil text-cream px-4 py-3 transform translate-y-full transition-transform duration-300 z-50">
+      <div class="max-w-6xl mx-auto flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="bg-terracotta rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold" id="cart-count">0</span>
+          <span class="font-semibold">₹<span id="cart-total">0</span></span>
+        </div>
+        <button onclick="showOrderForm()" class="bg-leaf hover:bg-leaf-dark text-cream font-semibold px-6 py-2 rounded-full transition-all text-sm">
+          Review Order →
+        </button>
+      </div>
+    </div>
+
+    <!-- Order Form Modal -->
+    <div id="order-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+      <div class="bg-cream rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="font-display text-2xl font-bold">Your Order</h2>
+            <button onclick="closeOrderForm()" class="text-soil/40 hover:text-soil text-2xl">&times;</button>
+          </div>
+          <!-- Order Summary -->
+          <div id="order-summary" class="mb-6 space-y-2">
+            <!-- Filled by JS -->
+          </div>
+          <div class="border-t border-soil/10 pt-4 mb-6">
+            <div class="flex justify-between font-bold text-lg">
+              <span>Total</span>
+              <span>₹<span id="order-total">0</span></span>
+            </div>
+          </div>
+          <!-- Form -->
+          <form id="order-form" onsubmit="submitOrder(event)">
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-semibold mb-1">Full Name *</label>
+                <input type="text" id="cust-name" required class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50" placeholder="Your name" />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-1">Phone Number *</label>
+                <input type="tel" id="cust-phone" required class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50" placeholder="9XXXXXXXXX" pattern="[0-9]{10}" />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-1">Delivery Address (Bengaluru) *</label>
+                <textarea id="cust-address" required rows="2" class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50 resize-none" placeholder="Full address with landmark"></textarea>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-semibold mb-1">Delivery Date *</label>
+                  <input type="date" id="cust-date" required class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50" />
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold mb-1">Time Slot *</label>
+                  <select id="cust-time" required class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50">
+                    <option value="">Select</option>
+                    <option value="Morning 8-11am">Morning 8-11am</option>
+                    <option value="Afternoon 12-3pm">Afternoon 12-3pm</option>
+                    <option value="Evening 4-7pm">Evening 4-7pm</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-1">Special Instructions</label>
+                <textarea id="cust-notes" rows="2" class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50 resize-none" placeholder="Any special requests..."></textarea>
+              </div>
+            </div>
+            <button type="submit" class="w-full mt-6 bg-leaf hover:bg-leaf-dark text-cream font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2">
+              <span>Confirm Order via WhatsApp</span>
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success Screen -->
+    <div id="success-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+      <div class="bg-cream rounded-2xl max-w-md w-full shadow-2xl text-center p-8">
+        <div class="text-6xl mb-4">🌿</div>
+        <h2 class="font-display text-3xl font-bold mb-2">Order Received!</h2>
+        <p class="text-soil/70 mb-2">Thank you <span id="success-name"></span>!</p>
+        <p class="text-soil/60 text-sm mb-6">Tap below to send your order details on WhatsApp.</p>
+        <a id="whatsapp-btn" href="#" target="_blank" class="inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#128C7E] text-white font-bold px-8 py-3 rounded-full transition-all mb-4">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          Send on WhatsApp
+        </a>
+        <br />
+        <button onclick="closeSuccess()" class="text-soil/50 hover:text-soil text-sm underline">Back to Shop</button>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-soil text-cream/60 text-center text-sm py-8 px-4">
+      <p>Ainora Mane Thota &copy; 2025 — Magadi, Karnataka</p>
+      <p class="mt-1">Organic produce delivered to Bengaluru</p>
+      <a href="#admin-login" onclick="showAdminLogin(event)" class="inline-block mt-4 text-cream/30 hover:text-cream/60 text-xs transition-colors">Admin</a>
+    </footer>
+  </div>
+
+  <!-- ============ ADMIN VIEW ============ -->
+  <div id="admin-view" class="hidden">
+    <!-- Admin Login -->
+    <div id="admin-login" class="min-h-screen flex items-center justify-center bg-cream p-4">
+      <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-8 text-center">
+        <div class="text-4xl mb-4">🔐</div>
+        <h2 class="font-display text-2xl font-bold mb-2">Admin Login</h2>
+        <p class="text-soil/50 text-sm mb-6">Ainora Mane Thota Dashboard</p>
+        <form onsubmit="adminLogin(event)">
+          <input type="password" id="admin-password" required class="w-full border border-soil/20 rounded-lg px-4 py-3 bg-cream focus:outline-none focus:ring-2 focus:ring-leaf/50 mb-4" placeholder="Enter admin password" />
+          <button type="submit" class="w-full bg-leaf hover:bg-leaf-dark text-cream font-bold py-3 rounded-xl transition-all">Login</button>
+          <p id="login-error" class="text-red-500 text-sm mt-3 hidden">Incorrect password</p>
+        </form>
+        <a href="#" onclick="showBuyerView(event)" class="inline-block mt-6 text-soil/40 hover:text-soil text-sm">← Back to Store</a>
+      </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="admin-dashboard" class="hidden">
+      <!-- Admin Header -->
+      <header class="bg-soil text-cream sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">🌿</span>
+            <h1 class="font-display text-lg font-bold">Ainora Mane Thota — Admin</h1>
+          </div>
+          <div class="flex items-center gap-3">
+            <button onclick="showBuyerView(event)" class="text-cream/60 hover:text-cream text-sm">View Store</button>
+            <button onclick="adminLogout()" class="bg-cream/10 hover:bg-cream/20 rounded-lg px-3 py-1.5 text-sm">Logout</button>
+          </div>
+        </div>
+        <!-- Admin Tabs -->
+        <div class="max-w-7xl mx-auto px-4 flex gap-1 border-t border-cream/10">
+          <button onclick="switchAdminTab('stock')" class="admin-tab active px-4 py-2.5 text-sm font-medium border-b-2 border-transparent" data-tab="stock">Stock</button>
+          <button onclick="switchAdminTab('orders')" class="admin-tab px-4 py-2.5 text-sm font-medium border-b-2 border-transparent" data-tab="orders">Orders</button>
+        </div>
+      </header>
+
+      <!-- Stats Bar -->
+      <div class="bg-white border-b border-soil/10">
+        <div class="max-w-7xl mx-auto px-4 py-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="bg-cream rounded-xl px-4 py-3">
+            <div class="text-soil/50 text-xs font-medium">Total Orders</div>
+            <div class="text-2xl font-bold" id="stat-total-orders">0</div>
+          </div>
+          <div class="bg-cream rounded-xl px-4 py-3">
+            <div class="text-soil/50 text-xs font-medium">Total Revenue</div>
+            <div class="text-2xl font-bold">₹<span id="stat-total-revenue">0</span></div>
+          </div>
+          <div class="bg-cream rounded-xl px-4 py-3">
+            <div class="text-soil/50 text-xs font-medium">Orders Today</div>
+            <div class="text-2xl font-bold" id="stat-today-orders">0</div>
+          </div>
+          <div class="bg-cream rounded-xl px-4 py-3">
+            <div class="text-soil/50 text-xs font-medium">Pending</div>
+            <div class="text-2xl font-bold text-terracotta" id="stat-pending-orders">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stock Tab -->
+      <div id="tab-stock" class="admin-tab-content max-w-7xl mx-auto px-4 py-6">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="font-display text-2xl font-bold">Quick Stock Update</h2>
+          <button onclick="saveAllStock()" class="bg-leaf hover:bg-leaf-dark text-cream font-semibold px-5 py-2 rounded-xl transition-all text-sm">Save All Changes</button>
+        </div>
+        <div id="admin-stock-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+          <!-- Stock cards rendered by JS -->
+        </div>
+
+        <!-- Add New Product -->
+        <div class="border border-soil/10 rounded-2xl overflow-hidden">
+          <button onclick="toggleAddProduct()" class="w-full flex items-center justify-between px-6 py-4 bg-white hover:bg-cream transition-colors">
+            <span class="font-semibold flex items-center gap-2"><span class="text-xl">+</span> Add New Product</span>
+            <span id="add-product-arrow" class="text-soil/40 transition-transform">▼</span>
+          </button>
+          <div id="add-product-form" class="hidden bg-white border-t border-soil/10 px-6 py-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold mb-1">Product Name (English) *</label>
+                <input type="text" id="new-name" class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-cream focus:outline-none focus:ring-2 focus:ring-leaf/50" placeholder="e.g. Coconut" />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-1">Kannada Name</label>
+                <input type="text" id="new-kannada" class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-cream focus:outline-none focus:ring-2 focus:ring-leaf/50" placeholder="e.g. Thenginakayi" />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-1">Emoji</label>
+                <input type="text" id="new-emoji" class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-cream focus:outline-none focus:ring-2 focus:ring-leaf/50" placeholder="🥥" />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-1">Photo</label>
+                <input type="file" id="new-photo" accept="image/jpeg,image/png,image/webp" class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-cream focus:outline-none focus:ring-2 focus:ring-leaf/50 text-sm" />
+                <img id="new-photo-preview" class="hidden mt-2 w-20 h-20 object-cover rounded-lg" />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-1">Unit *</label>
+                <select id="new-unit" class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-cream focus:outline-none focus:ring-2 focus:ring-leaf/50">
+                  <option value="piece">piece</option>
+                  <option value="kg">kg</option>
+                  <option value="bundle">bundle</option>
+                  <option value="250ml bottle">250ml bottle</option>
+                  <option value="500ml bottle">500ml bottle</option>
+                  <option value="100g pack">100g pack</option>
+                  <option value="litre">litre</option>
+                  <option value="dozen">dozen</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-1">Price (₹) *</label>
+                <input type="number" id="new-price" class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-cream focus:outline-none focus:ring-2 focus:ring-leaf/50" placeholder="40" min="0" />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-1">Opening Stock *</label>
+                <input type="number" id="new-stock" class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-cream focus:outline-none focus:ring-2 focus:ring-leaf/50" placeholder="10" min="0" />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-1">Delivery Estimate</label>
+                <select id="new-delivery" class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-cream focus:outline-none focus:ring-2 focus:ring-leaf/50">
+                  <option value="1-2 days">1-2 days</option>
+                  <option value="2-3 days" selected>2-3 days</option>
+                  <option value="3-5 days">3-5 days</option>
+                  <option value="Weekly">Weekly</option>
+                </select>
+              </div>
+            </div>
+            <button onclick="addProduct()" class="mt-6 bg-terracotta hover:bg-terracotta/90 text-cream font-bold px-8 py-3 rounded-xl transition-all">Add Product</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Orders Tab -->
+      <div id="tab-orders" class="admin-tab-content hidden max-w-7xl mx-auto px-4 py-6">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
+          <h2 class="font-display text-2xl font-bold">Orders</h2>
+          <div class="flex flex-wrap gap-3">
+            <select id="filter-status" onchange="renderOrders()" class="border border-soil/20 rounded-lg px-3 py-2 bg-white text-sm focus:outline-none">
+              <option value="all">All Status</option>
+              <option value="new">New</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="delivered">Delivered</option>
+            </select>
+            <input type="date" id="filter-date-from" onchange="renderOrders()" class="border border-soil/20 rounded-lg px-3 py-2 bg-white text-sm focus:outline-none" placeholder="From" />
+            <input type="date" id="filter-date-to" onchange="renderOrders()" class="border border-soil/20 rounded-lg px-3 py-2 bg-white text-sm focus:outline-none" placeholder="To" />
+            <button onclick="exportCSV()" class="bg-soil hover:bg-soil/80 text-cream font-semibold px-4 py-2 rounded-lg text-sm transition-all">Export CSV</button>
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-cream text-left">
+                <tr>
+                  <th class="px-4 py-3 font-semibold">Customer</th>
+                  <th class="px-4 py-3 font-semibold">Items</th>
+                  <th class="px-4 py-3 font-semibold">Total</th>
+                  <th class="px-4 py-3 font-semibold">Delivery</th>
+                  <th class="px-4 py-3 font-semibold">Address</th>
+                  <th class="px-4 py-3 font-semibold">Status</th>
+                  <th class="px-4 py-3 font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="orders-table-body">
+                <!-- Orders rendered by JS -->
+              </tbody>
+            </table>
+          </div>
+          <div id="empty-orders" class="hidden text-center py-12 text-soil/40">
+            <div class="text-4xl mb-2">📋</div>
+            <p>No orders yet</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Product Modal -->
+    <div id="edit-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+      <div class="bg-cream rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="font-display text-2xl font-bold">Edit Product</h2>
+            <button onclick="closeEditModal()" class="text-soil/40 hover:text-soil text-2xl">&times;</button>
+          </div>
+          <div class="space-y-4">
+            <input type="hidden" id="edit-id" />
+            <div>
+              <label class="block text-sm font-semibold mb-1">Product Name</label>
+              <input type="text" id="edit-name" class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold mb-1">Kannada Name</label>
+              <input type="text" id="edit-kannada" class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold mb-1">Emoji</label>
+              <input type="text" id="edit-emoji" class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold mb-1">Photo</label>
+              <div class="flex items-center gap-3">
+                <img id="edit-photo-preview" class="w-16 h-16 object-cover rounded-lg bg-cream" />
+                <input type="file" id="edit-photo" accept="image/jpeg,image/png,image/webp" class="text-sm" />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold mb-1">Unit</label>
+                <select id="edit-unit" class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50">
+                  <option value="piece">piece</option>
+                  <option value="kg">kg</option>
+                  <option value="bundle">bundle</option>
+                  <option value="250ml bottle">250ml bottle</option>
+                  <option value="500ml bottle">500ml bottle</option>
+                  <option value="100g pack">100g pack</option>
+                  <option value="litre">litre</option>
+                  <option value="dozen">dozen</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-1">Price (₹)</label>
+                <input type="number" id="edit-price" class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50" min="0" />
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold mb-1">Delivery Estimate</label>
+              <select id="edit-delivery" class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50">
+                <option value="1-2 days">1-2 days</option>
+                <option value="2-3 days">2-3 days</option>
+                <option value="3-5 days">3-5 days</option>
+                <option value="Weekly">Weekly</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex gap-3 mt-6">
+            <button onclick="saveEditProduct()" class="flex-1 bg-leaf hover:bg-leaf-dark text-cream font-bold py-3 rounded-xl transition-all">Save Changes</button>
+            <button onclick="deleteProduct()" class="bg-red-500 hover:bg-red-600 text-white font-bold px-6 py-3 rounded-xl transition-all">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed top-4 right-4 bg-leaf text-cream px-6 py-3 rounded-xl shadow-lg transform translate-x-full transition-transform duration-300 z-50 flex items-center gap-2">
+    <span>✓</span>
+    <span id="toast-msg">Saved!</span>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
