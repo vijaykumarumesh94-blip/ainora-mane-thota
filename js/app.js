@@ -796,6 +796,23 @@ async function deleteProduct() {
   }
 }
 
+function getWhatsAppLink(order) {
+  const phone = order.phone;
+  const name = order.customerName;
+  let message = '';
+
+  if (order.status === 'confirmed') {
+    message = `Hi ${name}! 🌿\n\nYour order from Ainora Mane Thota has been confirmed. We'll be sending your fresh produce package and delivery details shortly.\n\nThank you for choosing us!`;
+  } else if (order.status === 'delivered') {
+    message = `Hi ${name}! 🌿\n\nYour order from Ainora Mane Thota has been delivered. We hope you loved the fresh produce!\n\nCould you take 10 seconds to share your feedback? Just reply here — it helps us serve you better next time 🙏`;
+  }
+
+  if (message) {
+    return `https://wa.me/91${phone}?text=${encodeURIComponent(message)}`;
+  }
+  return `https://wa.me/91${phone}`;
+}
+
 // ==================== ORDERS TABLE ====================
 
 function renderOrders() {
@@ -854,7 +871,7 @@ function renderOrders() {
           </select>
         </td>
         <td class="px-4 py-3">
-          <a href="https://wa.me/91${o.phone}" target="_blank" class="text-[#25D366] hover:text-[#128C7E] text-lg" title="Chat on WhatsApp">💬</a>
+          <a href="${getWhatsAppLink(o)}" target="_blank" class="text-[#25D366] hover:text-[#128C7E] text-lg" title="Chat on WhatsApp">💬</a>
         </td>
       </tr>
     `;
