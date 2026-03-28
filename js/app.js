@@ -802,9 +802,9 @@ function getWhatsAppLink(order) {
   let message = '';
 
   if (order.status === 'confirmed') {
-    message = `Hi ${name}! 🌿\n\nYour order from Ainora Mane Thota has been confirmed. We'll be sending your fresh produce package and delivery details shortly.\n\nThank you for choosing us!`;
+    message = `Hi ${name}!\n\nYour order from Ainora Mane Thota has been confirmed. We'll be sending your fresh produce package and delivery details shortly.\n\nThank you for choosing us!`;
   } else if (order.status === 'delivered') {
-    message = `Hi ${name}! 🌿\n\nYour order from Ainora Mane Thota has been delivered. We hope you loved the fresh produce!\n\nCould you take 10 seconds to share your feedback? Just reply here — it helps us serve you better next time 🙏`;
+    message = `Hi ${name}!\n\nYour order from Ainora Mane Thota has been delivered. We hope you loved the fresh produce!\n\nCould you take 10 seconds to share your feedback? Just reply here — it helps us serve you better next time 🙏`;
   }
 
   if (message) {
