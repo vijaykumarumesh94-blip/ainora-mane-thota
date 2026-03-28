@@ -871,7 +871,10 @@ function renderOrders() {
           </select>
         </td>
         <td class="px-4 py-3">
-          <a href="${getWhatsAppLink(o)}" target="_blank" class="text-[#25D366] hover:text-[#128C7E] text-lg" title="Chat on WhatsApp">💬</a>
+          <div class="flex items-center gap-2">
+            <a href="${getWhatsAppLink(o)}" target="_blank" class="text-[#25D366] hover:text-[#128C7E] text-lg" title="Chat on WhatsApp">💬</a>
+            <button onclick="deleteOrder('${o.id}')" class="text-red-400 hover:text-red-600 text-lg" title="Delete order">🗑️</button>
+          </div>
         </td>
       </tr>
     `;
@@ -887,6 +890,36 @@ async function updateOrderStatus(orderId, status) {
   } catch (err) {
     console.error('Status update error:', err);
     showToast('Failed to update status');
+  }
+}
+
+async function deleteOrder(orderId) {
+  const order = ordersCache.find(o => o.id === orderId);
+  if (!order) return;
+
+  if (!confirm(`Delete order from ${order.customerName}? This will restore stock for ordered items.`)) return;
+
+  try {
+    // Restore stock for each item in the order
+    const batch = db.batch();
+    order.items.forEach(item => {
+      const product = productsCache.find(p => p.id === item.productId);
+      if (product) {
+        batch.update(productsRef.doc(item.productId), {
+          stock: product.stock + item.qty
+        });
+        product.stock = product.stock + item.qty;
+      }
+    });
+
+    // Delete the order
+    batch.delete(ordersRef.doc(orderId));
+
+    await batch.commit();
+    showToast('Order deleted, stock restored');
+  } catch (err) {
+    console.error('Delete order error:', err);
+    showToast('Failed to delete order');
   }
 }
 
