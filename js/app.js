@@ -473,6 +473,8 @@ function updateStats() {
 
   document.getElementById('stat-total-orders').textContent = orders.length;
   document.getElementById('stat-total-revenue').textContent = orders.reduce((sum, o) => sum + (o.total || 0), 0);
+  document.getElementById('stat-paid-revenue').textContent = orders.filter(o => (o.paymentStatus || 'unpaid') === 'paid').reduce((sum, o) => sum + (o.total || 0), 0);
+  document.getElementById('stat-unpaid-revenue').textContent = orders.filter(o => (o.paymentStatus || 'unpaid') === 'unpaid').reduce((sum, o) => sum + (o.total || 0), 0);
   document.getElementById('stat-today-orders').textContent = orders.filter(o => {
     if (!o.createdAt) return false;
     const d = o.createdAt.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
@@ -927,6 +929,154 @@ async function deleteProduct() {
   }
 }
 
+// ==================== CREATE MANUAL ORDER ====================
+
+function showCreateOrderModal() {
+  const form = document.getElementById('create-order-form');
+  if (form) form.reset();
+
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('manual-date').value = today;
+
+  renderManualProductsList();
+  document.getElementById('manual-order-total').textContent = '0';
+  document.getElementById('create-order-modal').classList.remove('hidden');
+  document.getElementById('create-order-modal').classList.add('flex');
+}
+
+function closeCreateOrderModal() {
+  document.getElementById('create-order-modal').classList.add('hidden');
+  document.getElementById('create-order-modal').classList.remove('flex');
+}
+
+function renderManualProductsList() {
+  const container = document.getElementById('manual-products-list');
+  if (!container) return;
+
+  const products = productsCache.filter(p => p.available && p.stock > 0).sort((a, b) => (a.sortOrder || 999) - (b.sortOrder || 999));
+
+  container.innerHTML = products.map(p => `
+    <div class="flex items-center justify-between gap-3 py-1.5 border-b border-soil/5 last:border-0">
+      <label class="flex items-center gap-2 flex-1 cursor-pointer min-w-0">
+        <input type="checkbox" class="manual-product-check w-4 h-4 accent-leaf rounded" data-id="${p.id}" onchange="updateManualOrderTotal()" />
+        <span class="text-sm truncate">${p.emoji} ${p.name}</span>
+      </label>
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <span class="text-xs text-soil/50">₹${p.price}/${p.unit}</span>
+        <input type="number" value="1" min="1" max="${p.stock}" class="manual-qty w-14 border border-soil/20 rounded px-2 py-1 text-xs text-center bg-cream focus:outline-none focus:ring-1 focus:ring-leaf/50" data-id="${p.id}" onchange="updateManualOrderTotal()" oninput="updateManualOrderTotal()" />
+        <span class="text-xs text-soil/40">(${p.stock} avail)</span>
+      </div>
+    </div>
+  `).join('');
+
+  if (products.length === 0) {
+    container.innerHTML = '<p class="text-soil/40 text-sm text-center py-4">No products with stock available</p>';
+  }
+}
+
+function updateManualOrderTotal() {
+  let total = 0;
+  document.querySelectorAll('.manual-product-check:checked').forEach(cb => {
+    const id = cb.dataset.id;
+    const product = productsCache.find(p => p.id === id);
+    const qtyInput = document.querySelector(`.manual-qty[data-id="${id}"]`);
+    if (product && qtyInput) {
+      const qty = Math.max(1, parseInt(qtyInput.value) || 1);
+      total += qty * product.price;
+    }
+  });
+  document.getElementById('manual-order-total').textContent = total;
+}
+
+async function submitCreateOrder(e) {
+  e.preventDefault();
+
+  const name = document.getElementById('manual-name').value.trim();
+  const phone = document.getElementById('manual-phone').value.trim();
+  const address = document.getElementById('manual-address').value.trim();
+  const date = document.getElementById('manual-date').value;
+  const time = document.getElementById('manual-time').value;
+  const source = document.getElementById('manual-source').value;
+  const notes = document.getElementById('manual-notes').value.trim();
+
+  // Collect selected products
+  const items = [];
+  let total = 0;
+  document.querySelectorAll('.manual-product-check:checked').forEach(cb => {
+    const id = cb.dataset.id;
+    const product = productsCache.find(p => p.id === id);
+    const qtyInput = document.querySelector(`.manual-qty[data-id="${id}"]`);
+    if (product && qtyInput) {
+      const qty = Math.max(1, parseInt(qtyInput.value) || 1);
+      const subtotal = qty * product.price;
+      total += subtotal;
+      items.push({
+        productId: id,
+        name: product.name,
+        qty,
+        price: product.price,
+        subtotal
+      });
+    }
+  });
+
+  if (items.length === 0) {
+    showToast('Please select at least one product');
+    return;
+  }
+
+  const order = {
+    customerName: name,
+    phone,
+    address: address || '',
+    deliveryDate: date,
+    deliveryTime: time || '',
+    notes: notes || '',
+    source,
+    items,
+    total,
+    status: 'confirmed',
+    paymentStatus: 'unpaid',
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  try {
+    await ordersRef.add(order);
+
+    // Decrement stock
+    const batch = db.batch();
+    items.forEach(item => {
+      const product = productsCache.find(p => p.id === item.productId);
+      if (product) {
+        batch.update(productsRef.doc(item.productId), {
+          stock: Math.max(0, product.stock - item.qty),
+          maxStock: product.maxStock || product.stock
+        });
+      }
+    });
+    await batch.commit();
+
+    closeCreateOrderModal();
+    showToast(`Order created for ${name}`);
+  } catch (err) {
+    console.error('Create order error:', err);
+    showToast('Failed to create order');
+  }
+}
+
+// ==================== PAYMENT STATUS ====================
+
+async function togglePaymentStatus(orderId, currentStatus) {
+  const newStatus = currentStatus === 'paid' ? 'unpaid' : 'paid';
+  try {
+    await ordersRef.doc(orderId).update({ paymentStatus: newStatus });
+    showToast(`Payment marked as ${newStatus}`);
+  } catch (err) {
+    console.error('Payment toggle error:', err);
+    showToast('Failed to update payment status');
+  }
+}
+
 function getWhatsAppLink(order) {
   const phone = order.phone;
   const name = order.customerName;
@@ -949,11 +1099,16 @@ function getWhatsAppLink(order) {
 function renderOrders() {
   let orders = [...ordersCache];
   const statusFilter = document.getElementById('filter-status')?.value || 'all';
+  const paymentFilter = document.getElementById('filter-payment')?.value || 'all';
   const dateFrom = document.getElementById('filter-date-from')?.value;
   const dateTo = document.getElementById('filter-date-to')?.value;
 
   if (statusFilter !== 'all') {
     orders = orders.filter(o => o.status === statusFilter);
+  }
+
+  if (paymentFilter !== 'all') {
+    orders = orders.filter(o => (o.paymentStatus || 'unpaid') === paymentFilter);
   }
 
   if (dateFrom) {
@@ -980,11 +1135,14 @@ function renderOrders() {
   tbody.innerHTML = orders.map(o => {
     const itemsSummary = o.items.map(i => `${i.name}×${i.qty}`).join(', ');
     const statusClass = o.status || 'new';
+    const paymentStatus = o.paymentStatus || 'unpaid';
+    const isPaid = paymentStatus === 'paid';
+    const sourceTag = o.source ? `<span class="inline-block bg-soil/10 text-soil/60 text-[10px] px-1.5 py-0.5 rounded ml-1">${o.source}</span>` : '';
 
     return `
       <tr class="border-t border-soil/5">
         <td class="px-4 py-3">
-          <div class="font-semibold">${o.customerName}</div>
+          <div class="font-semibold">${o.customerName}${sourceTag}</div>
           <div class="text-soil/40 text-xs">${o.phone}</div>
         </td>
         <td class="px-4 py-3 text-xs max-w-[200px] truncate" title="${itemsSummary}">${itemsSummary}</td>
@@ -1000,6 +1158,12 @@ function renderOrders() {
             <option value="confirmed" ${o.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
             <option value="delivered" ${o.status === 'delivered' ? 'selected' : ''}>Delivered</option>
           </select>
+        </td>
+        <td class="px-4 py-3">
+          <button onclick="togglePaymentStatus('${o.id}', '${paymentStatus}')" class="payment-toggle ${isPaid ? 'paid' : 'unpaid'}">
+            <span class="payment-toggle-dot"></span>
+            <span class="text-xs font-semibold">${isPaid ? 'Paid' : 'Unpaid'}</span>
+          </button>
         </td>
         <td class="px-4 py-3">
           <div class="flex items-center gap-2">
@@ -1063,12 +1227,12 @@ function exportCSV() {
     return;
   }
 
-  const headers = ['Name', 'Phone', 'Address', 'Items', 'Total', 'Delivery Date', 'Delivery Time', 'Status'];
+  const headers = ['Name', 'Phone', 'Address', 'Items', 'Total', 'Delivery Date', 'Delivery Time', 'Status', 'Payment', 'Source'];
   const rows = orders.map(o => {
     const items = o.items.map(i => `${i.name} x${i.qty}`).join('; ');
     return [
       o.customerName, o.phone, `"${o.address}"`, `"${items}"`,
-      o.total, o.deliveryDate, o.deliveryTime, o.status
+      o.total, o.deliveryDate, o.deliveryTime, o.status, o.paymentStatus || 'unpaid', o.source || ''
     ];
   });
 

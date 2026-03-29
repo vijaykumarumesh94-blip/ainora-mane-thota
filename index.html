@@ -314,7 +314,7 @@
 
       <!-- Stats Bar -->
       <div class="bg-white border-b border-soil/10">
-        <div class="max-w-7xl mx-auto px-4 py-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="max-w-7xl mx-auto px-4 py-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           <div class="bg-cream rounded-xl px-4 py-3">
             <div class="text-soil/50 text-xs font-medium">Total Orders</div>
             <div class="text-2xl font-bold" id="stat-total-orders">0</div>
@@ -322,6 +322,14 @@
           <div class="bg-cream rounded-xl px-4 py-3">
             <div class="text-soil/50 text-xs font-medium">Total Revenue</div>
             <div class="text-2xl font-bold">₹<span id="stat-total-revenue">0</span></div>
+          </div>
+          <div class="bg-cream rounded-xl px-4 py-3">
+            <div class="text-soil/50 text-xs font-medium">Paid</div>
+            <div class="text-2xl font-bold text-leaf">₹<span id="stat-paid-revenue">0</span></div>
+          </div>
+          <div class="bg-cream rounded-xl px-4 py-3">
+            <div class="text-soil/50 text-xs font-medium">Unpaid</div>
+            <div class="text-2xl font-bold text-terracotta">₹<span id="stat-unpaid-revenue">0</span></div>
           </div>
           <div class="bg-cream rounded-xl px-4 py-3">
             <div class="text-soil/50 text-xs font-medium">Orders Today</div>
@@ -428,12 +436,22 @@
         <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
           <h2 class="font-display text-2xl font-bold">Orders</h2>
           <div class="flex flex-wrap gap-3">
+            <button onclick="showCreateOrderModal()"
+              class="bg-terracotta hover:bg-terracotta/90 text-cream font-semibold px-4 py-2 rounded-lg text-sm transition-all flex items-center gap-1">
+              <span class="text-lg leading-none">+</span> Create Order
+            </button>
             <select id="filter-status" onchange="renderOrders()"
               class="border border-soil/20 rounded-lg px-3 py-2 bg-white text-sm focus:outline-none">
               <option value="all">All Status</option>
               <option value="new">New</option>
               <option value="confirmed">Confirmed</option>
               <option value="delivered">Delivered</option>
+            </select>
+            <select id="filter-payment" onchange="renderOrders()"
+              class="border border-soil/20 rounded-lg px-3 py-2 bg-white text-sm focus:outline-none">
+              <option value="all">All Payment</option>
+              <option value="paid">Paid</option>
+              <option value="unpaid">Unpaid</option>
             </select>
             <input type="date" id="filter-date-from" onchange="renderOrders()"
               class="border border-soil/20 rounded-lg px-3 py-2 bg-white text-sm focus:outline-none"
@@ -456,6 +474,7 @@
                   <th class="px-4 py-3 font-semibold">Delivery</th>
                   <th class="px-4 py-3 font-semibold">Address</th>
                   <th class="px-4 py-3 font-semibold">Status</th>
+                  <th class="px-4 py-3 font-semibold">Payment</th>
                   <th class="px-4 py-3 font-semibold">Actions</th>
                 </tr>
               </thead>
@@ -544,6 +563,87 @@
             <button onclick="deleteProduct()"
               class="bg-red-500 hover:bg-red-600 text-white font-bold px-6 py-3 rounded-xl transition-all">Delete</button>
           </div>
+        </div>
+      </div>
+    </div>
+    <!-- Create Order Modal -->
+    <div id="create-order-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+      <div class="bg-cream rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="font-display text-2xl font-bold">Create Manual Order</h2>
+            <button onclick="closeCreateOrderModal()" class="text-soil/40 hover:text-soil text-2xl">&times;</button>
+          </div>
+          <form id="create-order-form" onsubmit="submitCreateOrder(event)">
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-semibold mb-1">Customer Name *</label>
+                <input type="text" id="manual-name" required
+                  class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50"
+                  placeholder="Customer name" />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-1">Phone Number *</label>
+                <input type="tel" id="manual-phone" required
+                  class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50"
+                  placeholder="9XXXXXXXXX" pattern="[0-9]{10}" />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-1">Delivery Address</label>
+                <textarea id="manual-address" rows="2"
+                  class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50 resize-none"
+                  placeholder="Full address with landmark"></textarea>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-semibold mb-1">Delivery Date *</label>
+                  <input type="date" id="manual-date" required
+                    class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50" />
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold mb-1">Time Slot</label>
+                  <select id="manual-time"
+                    class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50">
+                    <option value="">Select</option>
+                    <option value="Morning 8-11am">Morning 8-11am</option>
+                    <option value="Afternoon 12-3pm">Afternoon 12-3pm</option>
+                    <option value="Evening 4-7pm">Evening 4-7pm</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-1">Order Source</label>
+                <select id="manual-source"
+                  class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50">
+                  <option value="WhatsApp">WhatsApp</option>
+                  <option value="Phone">Phone Call</option>
+                  <option value="Walk-in">Walk-in</option>
+                  <option value="Instagram">Instagram</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-1">Select Products *</label>
+                <div id="manual-products-list" class="space-y-2 max-h-48 overflow-y-auto border border-soil/10 rounded-lg p-3 bg-white">
+                  <!-- Rendered by JS -->
+                </div>
+              </div>
+              <div class="flex items-center justify-between bg-white rounded-lg px-4 py-3 border border-soil/10">
+                <span class="font-semibold">Order Total</span>
+                <span class="text-xl font-bold">₹<span id="manual-order-total">0</span></span>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-1">Notes</label>
+                <textarea id="manual-notes" rows="2"
+                  class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50 resize-none"
+                  placeholder="Any special requests..."></textarea>
+              </div>
+            </div>
+            <button type="submit"
+              class="w-full mt-6 bg-leaf hover:bg-leaf-dark text-cream font-bold py-3 rounded-xl transition-all">
+              Create Order
+            </button>
+          </form>
         </div>
       </div>
     </div>
