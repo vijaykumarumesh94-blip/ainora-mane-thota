@@ -31,6 +31,7 @@
       },
     };
   </script>
+  <link rel="icon" type="image/png" href="assets/logo.png" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 
@@ -41,7 +42,7 @@
     <header id="hero" class="relative bg-soil text-cream">
       <div class="hero-bg absolute inset-0 opacity-20"></div>
       <div class="relative max-w-5xl mx-auto px-4 py-12 md:py-20 text-center">
-        <div class="text-5xl mb-4">🌿</div>
+        <img src="assets/logo.png" alt="Ainora Mane Thota" class="w-64 h-64 md:w-80 md:h-80 lg:w-[340px] lg:h-[340px] mx-auto mb-6 object-contain drop-shadow-lg" />
         <h1 class="font-display text-4xl md:text-5xl lg:text-6xl font-bold mb-3">Ainora Mane Thota</h1>
         <p class="text-lg md:text-xl text-cream/80 italic font-display mb-6">Grown with care. Delivered to your door.
         </p>
@@ -72,7 +73,7 @@
         <!-- Products rendered by JS -->
       </div>
       <div id="empty-catalog" class="hidden text-center py-16 text-soil/50">
-        <div class="text-5xl mb-4">🌾</div>
+        <img src="assets/logo.png" alt="Ainora Mane Thota" class="w-16 h-16 mx-auto mb-4 opacity-40 object-contain" />
         <p class="text-lg">No produce available right now.</p>
         <p class="text-sm">Check back after our next harvest!</p>
       </div>
@@ -99,7 +100,10 @@
       <div class="bg-cream rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
         <div class="p-6">
           <div class="flex items-center justify-between mb-6">
-            <h2 class="font-display text-2xl font-bold">Your Order</h2>
+            <div class="flex items-center gap-3">
+              <img src="assets/logo.png" alt="Ainora Mane Thota" class="w-7 h-7 object-contain" />
+              <h2 class="font-display text-2xl font-bold">Your Order</h2>
+            </div>
             <button onclick="closeOrderForm()" class="text-soil/40 hover:text-soil text-2xl">&times;</button>
           </div>
           <!-- Order Summary -->
@@ -170,7 +174,7 @@
     <!-- Success Screen -->
     <div id="success-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
       <div class="bg-cream rounded-2xl max-w-md w-full shadow-2xl text-center p-8">
-        <div class="text-6xl mb-4">🌿</div>
+        <img src="assets/logo.png" alt="Ainora Mane Thota" class="w-16 h-16 mx-auto mb-4 object-contain" />
         <h2 class="font-display text-3xl font-bold mb-2">Order Received!</h2>
         <p class="text-soil/70 mb-2">Thank you <span id="success-name"></span>!</p>
         <p class="text-soil/70 text-sm mb-6 font-medium">Great choice on the produce! Sit back and relax — we'll confirm your order and ship it to you soon.</p>
@@ -250,6 +254,7 @@
 
     <!-- Footer -->
     <footer class="bg-soil text-cream/60 text-center text-sm py-8 px-4">
+      <img src="assets/logo.png" alt="Ainora Mane Thota" class="w-10 h-10 mx-auto mb-3 opacity-60 object-contain" />
       <p>Ainora Mane Thota &copy; 2026 — Magadi, Karnataka</p>
       <p class="mt-1">Organic produce delivered to Bengaluru</p>
       <a href="#admin-login" onclick="showAdminLogin(event)"
@@ -262,7 +267,7 @@
     <!-- Admin Login -->
     <div id="admin-login" class="min-h-screen flex items-center justify-center bg-cream p-4">
       <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-8 text-center">
-        <div class="text-4xl mb-4">🔐</div>
+        <img src="assets/logo.png" alt="Ainora Mane Thota" class="w-14 h-14 mx-auto mb-4 object-contain" />
         <h2 class="font-display text-2xl font-bold mb-2">Admin Login</h2>
         <p class="text-soil/50 text-sm mb-6">Ainora Mane Thota Dashboard</p>
         <form onsubmit="adminLogin(event)">
@@ -284,7 +289,7 @@
       <header class="bg-soil text-cream sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <span class="text-2xl">🌿</span>
+            <img src="assets/logo.png" alt="Ainora Mane Thota" class="w-8 h-8 object-contain" />
             <h1 class="font-display text-lg font-bold">Ainora Mane Thota — Admin</h1>
           </div>
           <div class="flex items-center gap-3">
