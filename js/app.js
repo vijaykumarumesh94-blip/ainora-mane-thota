@@ -821,7 +821,7 @@ function compressAndStoreImage(file) {
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
-      img.onload = () => {
+      img.onload = async () => {
         const canvas = document.createElement('canvas');
         const maxSize = 800;
         let w = img.width;
@@ -836,8 +836,21 @@ function compressAndStoreImage(file) {
         canvas.height = h;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, w, h);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-        resolve(dataUrl);
+
+        canvas.toBlob(async (blob) => {
+          try {
+            const filename = `products/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.jpg`;
+            const ref = storage.ref().child(filename);
+            await ref.put(blob);
+            const url = await ref.getDownloadURL();
+            resolve(url);
+          } catch (err) {
+            console.error('Firebase Storage upload failed:', err);
+            // Fallback to base64 if Storage upload fails
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            resolve(dataUrl);
+          }
+        }, 'image/jpeg', 0.7);
       };
       img.onerror = reject;
       img.src = e.target.result;
