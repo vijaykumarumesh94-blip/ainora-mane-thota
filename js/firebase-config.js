@@ -21,11 +21,15 @@ const CONFIG = {
 // Initialize Firebase
 let db = null;
 let storage = null;
+let messaging = null;
 
 try {
   firebase.initializeApp(firebaseConfig);
   db = firebase.firestore();
   storage = firebase.storage();
+  if (firebase.messaging.isSupported()) {
+    messaging = firebase.messaging();
+  }
   console.log('Firebase initialized');
 } catch (e) {
   console.error('Firebase init failed:', e);

@@ -37,6 +37,8 @@ let productsCache = [];
 let ordersCache = [];
 let unsubscribeProducts = null;
 let unsubscribeOrders = null;
+let knownOrderCount = 0;
+let notificationPermissionGranted = false;
 
 // ==================== DATA LAYER — FIRESTORE ====================
 
@@ -74,7 +76,15 @@ function initRealtimeListeners() {
 
   // Real-time orders listener
   unsubscribeOrders = ordersRef.orderBy('createdAt', 'desc').onSnapshot((snapshot) => {
+    const previousCount = ordersCache.length;
     ordersCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    // Detect new order and trigger notification
+    if (ordersCache.length > previousCount && previousCount > 0) {
+      const newOrder = ordersCache[0];
+      showPushNotification(newOrder);
+    }
+
     if (document.getElementById('admin-dashboard') && !document.getElementById('admin-dashboard').classList.contains('hidden')) {
       renderOrders();
       updateStats();
@@ -436,6 +446,7 @@ function adminLogin(e) {
     document.getElementById('admin-dashboard').classList.remove('hidden');
     localStorage.setItem(STORAGE_KEYS.adminAuth, 'true');
     loadAdminDashboard();
+    requestNotificationPermission();
   } else {
     document.getElementById('login-error').classList.remove('hidden');
   }
@@ -1083,6 +1094,79 @@ function showToast(msg) {
   setTimeout(() => toast.classList.remove('show'), 2500);
 }
 
+// ==================== PUSH NOTIFICATIONS ====================
+
+async function requestNotificationPermission() {
+  if (!('Notification' in window)) {
+    console.warn('Browser does not support notifications');
+    return;
+  }
+
+  if (Notification.permission === 'granted') {
+    notificationPermissionGranted = true;
+    registerFCMToken();
+    return;
+  }
+
+  if (Notification.permission !== 'denied') {
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      notificationPermissionGranted = true;
+      registerFCMToken();
+    }
+  }
+}
+
+async function registerFCMToken() {
+  if (!messaging) return;
+
+  try {
+    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    const token = await messaging.getToken({
+      vapidKey: 'BEwQcGz9aPjrcycsyZ3Ptr6fn7aH2c4ZgTVzay1oDDqzD0zChbS04w9QwB2fFx4Bkq-Gad2gGuIIqme6L2RkmJ4',
+      serviceWorkerRegistration: registration
+    });
+    console.log('FCM Token:', token);
+  } catch (err) {
+    console.error('FCM token error:', err);
+  }
+}
+
+function showPushNotification(order) {
+  const itemsSummary = order.items.map(i => `${i.name} x${i.qty}`).join(', ');
+  const title = `New Order - ₹${order.total}`;
+  const body = `${order.customerName} (${order.phone})\n${itemsSummary}`;
+
+  // Browser notification (works when tab is open or in background)
+  if ('Notification' in window && Notification.permission === 'granted') {
+    const notification = new Notification(title, {
+      body,
+      icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="80">🌿</text></svg>',
+      tag: 'new-order-' + order.id,
+      requireInteraction: true
+    });
+
+    notification.onclick = function () {
+      window.focus();
+      notification.close();
+    };
+  }
+
+  // Play a subtle notification sound
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    oscillator.frequency.value = 880;
+    oscillator.type = 'sine';
+    gainNode.gain.value = 0.1;
+    oscillator.start();
+    oscillator.stop(audioCtx.currentTime + 0.15);
+  } catch (e) {}
+}
+
 // ==================== INIT ====================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1096,6 +1180,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('admin-login').classList.add('hidden');
     document.getElementById('admin-dashboard').classList.remove('hidden');
     loadAdminDashboard();
+    requestNotificationPermission();
   }
 
   if (window.location.hash === '#admin') {
