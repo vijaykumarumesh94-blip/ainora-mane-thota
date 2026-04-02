@@ -1181,6 +1181,7 @@ function renderOrders() {
         <td class="px-4 py-3">
           <div class="flex items-center gap-2">
             <a href="${getWhatsAppLink(o)}" target="_blank" class="text-[#25D366] hover:text-[#128C7E] text-lg" title="Chat on WhatsApp">💬</a>
+            <button onclick="showEditOrderModal('${o.id}')" class="text-blue-400 hover:text-blue-600 text-lg" title="Edit order">✏️</button>
             <button onclick="deleteOrder('${o.id}')" class="text-red-400 hover:text-red-600 text-lg" title="Delete order">🗑️</button>
           </div>
         </td>
@@ -1228,6 +1229,178 @@ async function deleteOrder(orderId) {
   } catch (err) {
     console.error('Delete order error:', err);
     showToast('Failed to delete order');
+  }
+}
+
+// ==================== EDIT ORDER ====================
+
+function showEditOrderModal(orderId) {
+  const order = ordersCache.find(o => o.id === orderId);
+  if (!order) return;
+
+  document.getElementById('edit-order-id').value = orderId;
+  document.getElementById('edit-name').value = order.customerName || '';
+  document.getElementById('edit-phone').value = order.phone || '';
+  document.getElementById('edit-address').value = order.address || '';
+  document.getElementById('edit-date').value = order.deliveryDate || '';
+  document.getElementById('edit-notes').value = order.notes || '';
+
+  const timeSelect = document.getElementById('edit-time');
+  const knownSlots = ['Morning 8-11am', 'Afternoon 12-3pm', 'Evening 4-7pm'];
+  timeSelect.value = knownSlots.includes(order.deliveryTime) ? order.deliveryTime : '';
+
+  const sourceSelect = document.getElementById('edit-source');
+  sourceSelect.value = order.source || 'website';
+
+  renderEditProductsList(order.items || []);
+
+  document.getElementById('edit-order-modal').classList.remove('hidden');
+  document.getElementById('edit-order-modal').classList.add('flex');
+}
+
+function closeEditOrderModal() {
+  document.getElementById('edit-order-modal').classList.add('hidden');
+  document.getElementById('edit-order-modal').classList.remove('flex');
+}
+
+function renderEditProductsList(existingItems) {
+  const container = document.getElementById('edit-products-list');
+  if (!container) return;
+
+  const existingMap = {};
+  existingItems.forEach(item => { existingMap[item.productId] = item; });
+
+  const availableProducts = productsCache.filter(p => p.available).sort((a, b) => (a.sortOrder || 999) - (b.sortOrder || 999));
+  const availableIds = new Set(availableProducts.map(p => p.id));
+
+  // Also include products from existing items that are no longer available
+  const extraProducts = existingItems
+    .map(item => productsCache.find(p => p.id === item.productId))
+    .filter(p => p && !availableIds.has(p.id));
+
+  const allProducts = [...availableProducts, ...extraProducts];
+
+  if (allProducts.length === 0) {
+    container.innerHTML = '<p class="text-soil/40 text-sm text-center py-4">No products available</p>';
+    return;
+  }
+
+  container.innerHTML = allProducts.map(p => {
+    const existing = existingMap[p.id];
+    const isChecked = !!existing;
+    const qty = existing ? existing.qty : 1;
+    // Effective max = current stock + already-ordered qty (since that qty is already deducted)
+    const effectiveMax = (p.stock || 0) + (existing ? existing.qty : 0);
+
+    return `
+      <div class="flex items-center justify-between gap-3 py-1.5 border-b border-soil/5 last:border-0">
+        <label class="flex items-center gap-2 flex-1 cursor-pointer min-w-0">
+          <input type="checkbox" class="edit-product-check w-4 h-4 accent-leaf rounded" data-id="${p.id}" ${isChecked ? 'checked' : ''} onchange="updateEditOrderTotal()" />
+          <span class="text-sm truncate">${p.emoji} ${p.name}</span>
+        </label>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <span class="text-xs text-soil/50">₹${p.price}/${p.unit}</span>
+          <input type="number" value="${qty}" min="1" max="${effectiveMax || 99}" class="edit-qty w-14 border border-soil/20 rounded px-2 py-1 text-xs text-center bg-cream focus:outline-none focus:ring-1 focus:ring-leaf/50" data-id="${p.id}" data-price="${p.price}" onchange="updateEditOrderTotal()" oninput="updateEditOrderTotal()" />
+          <span class="text-xs text-soil/40">(${effectiveMax} avail)</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  updateEditOrderTotal();
+}
+
+function updateEditOrderTotal() {
+  let total = 0;
+  document.querySelectorAll('.edit-product-check:checked').forEach(cb => {
+    const id = cb.dataset.id;
+    const qtyInput = document.querySelector(`.edit-qty[data-id="${id}"]`);
+    if (qtyInput) {
+      const qty = Math.max(1, parseInt(qtyInput.value) || 1);
+      const price = parseFloat(qtyInput.dataset.price || 0);
+      total += qty * price;
+    }
+  });
+  document.getElementById('edit-order-total').textContent = total;
+}
+
+async function submitEditOrder(e) {
+  e.preventDefault();
+
+  const orderId = document.getElementById('edit-order-id').value;
+  const order = ordersCache.find(o => o.id === orderId);
+  if (!order) return;
+
+  const name = document.getElementById('edit-name').value.trim();
+  const phone = document.getElementById('edit-phone').value.trim();
+  const address = document.getElementById('edit-address').value.trim();
+  const date = document.getElementById('edit-date').value;
+  const time = document.getElementById('edit-time').value;
+  const source = document.getElementById('edit-source').value;
+  const notes = document.getElementById('edit-notes').value.trim();
+
+  const newItems = [];
+  let total = 0;
+  document.querySelectorAll('.edit-product-check:checked').forEach(cb => {
+    const id = cb.dataset.id;
+    const product = productsCache.find(p => p.id === id);
+    const qtyInput = document.querySelector(`.edit-qty[data-id="${id}"]`);
+    if (product && qtyInput) {
+      const qty = Math.max(1, parseInt(qtyInput.value) || 1);
+      const subtotal = qty * product.price;
+      total += subtotal;
+      newItems.push({ productId: id, name: product.name, qty, price: product.price, subtotal });
+    }
+  });
+
+  if (newItems.length === 0) {
+    showToast('Please select at least one product');
+    return;
+  }
+
+  try {
+    const batch = db.batch();
+
+    // Restore stock for old items first (update local cache too so new deductions are correct)
+    (order.items || []).forEach(oldItem => {
+      const product = productsCache.find(p => p.id === oldItem.productId);
+      if (product) {
+        const restoredStock = product.stock + oldItem.qty;
+        batch.update(productsRef.doc(oldItem.productId), { stock: restoredStock });
+        product.stock = restoredStock;
+      }
+    });
+
+    // Deduct stock for new items
+    newItems.forEach(newItem => {
+      const product = productsCache.find(p => p.id === newItem.productId);
+      if (product) {
+        const newStock = Math.max(0, product.stock - newItem.qty);
+        batch.update(productsRef.doc(newItem.productId), { stock: newStock });
+        product.stock = newStock;
+      }
+    });
+
+    // Update the order document
+    batch.update(ordersRef.doc(orderId), {
+      customerName: name,
+      phone,
+      address,
+      deliveryDate: date,
+      deliveryTime: time,
+      source,
+      notes,
+      items: newItems,
+      total,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    await batch.commit();
+    closeEditOrderModal();
+    showToast(`Order for ${name} updated`);
+  } catch (err) {
+    console.error('Edit order error:', err);
+    showToast('Failed to update order');
   }
 }
 

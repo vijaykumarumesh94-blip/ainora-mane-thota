@@ -644,6 +644,90 @@
         </div>
       </div>
     </div>
+
+    <!-- Edit Order Modal -->
+    <div id="edit-order-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+      <div class="bg-cream rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="font-display text-2xl font-bold">Edit Order</h2>
+            <button onclick="closeEditOrderModal()" class="text-soil/40 hover:text-soil text-2xl">&times;</button>
+          </div>
+          <form id="edit-order-form" onsubmit="submitEditOrder(event)">
+            <input type="hidden" id="edit-order-id" />
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-semibold mb-1">Customer Name *</label>
+                <input type="text" id="edit-name" required
+                  class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50"
+                  placeholder="Customer name" />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-1">Phone Number *</label>
+                <input type="tel" id="edit-phone" required
+                  class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50"
+                  placeholder="9XXXXXXXXX" pattern="[0-9]{10}" />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-1">Delivery Address</label>
+                <textarea id="edit-address" rows="2"
+                  class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50 resize-none"
+                  placeholder="Full address with landmark"></textarea>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-semibold mb-1">Delivery Date *</label>
+                  <input type="date" id="edit-date" required
+                    class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50" />
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold mb-1">Time Slot</label>
+                  <select id="edit-time"
+                    class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50">
+                    <option value="">Select</option>
+                    <option value="Morning 8-11am">Morning 8-11am</option>
+                    <option value="Afternoon 12-3pm">Afternoon 12-3pm</option>
+                    <option value="Evening 4-7pm">Evening 4-7pm</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-1">Order Source</label>
+                <select id="edit-source"
+                  class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50">
+                  <option value="website">Website</option>
+                  <option value="WhatsApp">WhatsApp</option>
+                  <option value="Phone">Phone Call</option>
+                  <option value="Walk-in">Walk-in</option>
+                  <option value="Instagram">Instagram</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-1">Items *</label>
+                <div id="edit-products-list" class="space-y-2 max-h-48 overflow-y-auto border border-soil/10 rounded-lg p-3 bg-white">
+                  <!-- Rendered by JS -->
+                </div>
+              </div>
+              <div class="flex items-center justify-between bg-white rounded-lg px-4 py-3 border border-soil/10">
+                <span class="font-semibold">Order Total</span>
+                <span class="text-xl font-bold">₹<span id="edit-order-total">0</span></span>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-1">Notes</label>
+                <textarea id="edit-notes" rows="2"
+                  class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50 resize-none"
+                  placeholder="Any special requests..."></textarea>
+              </div>
+            </div>
+            <button type="submit"
+              class="w-full mt-6 bg-leaf hover:bg-leaf-dark text-cream font-bold py-3 rounded-xl transition-all">
+              Save Changes
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Toast Notification -->
