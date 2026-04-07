@@ -136,6 +136,8 @@ function renderCatalog() {
   grid.classList.remove('hidden');
   empty.classList.add('hidden');
 
+  products.filter(p => p.stock === 0).forEach(p => track('sold_out_product_seen', { product: p.name }));
+
   grid.innerHTML = products.map((p, i) => {
     const colorClass = PRODUCT_COLORS[i % PRODUCT_COLORS.length];
     const inCart = cart[p.id] || 0;
@@ -202,8 +204,10 @@ function updateCart(productId, delta) {
 
   if (newQty === 0) {
     delete cart[productId];
+    track('product_removed_from_cart', { product: product.name, price: product.price });
   } else {
     cart[productId] = newQty;
+    if (delta > 0) track('product_added_to_cart', { product: product.name, price: product.price, quantity: newQty });
   }
 
   saveCart(cart);
@@ -269,6 +273,7 @@ function showOrderForm() {
   document.getElementById('order-total').textContent = total;
   document.getElementById('order-modal').classList.remove('hidden');
   document.getElementById('order-modal').classList.add('flex');
+  track('order_form_opened', { cart_total: total, item_count: items.length });
 
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('cust-date').min = today;
@@ -277,6 +282,9 @@ function showOrderForm() {
 function closeOrderForm() {
   document.getElementById('order-modal').classList.add('hidden');
   document.getElementById('order-modal').classList.remove('flex');
+  const cart = getCart();
+  const itemCount = Object.keys(cart).length;
+  if (itemCount > 0) track('order_form_abandoned', { item_count: itemCount });
 }
 
 async function submitOrder(e) {
@@ -349,6 +357,14 @@ async function submitOrder(e) {
     const itemList = items.map(i => `  • ${i.name} × ${i.qty} (₹${i.subtotal})`).join('\n');
     const waMessage = `🌿 *New Order — Ainora Mane Thota*\n\n*${name}* (${phone})\n\n*Items:*\n${itemList}\n\n*Total: ₹${total}*\n\n*Delivery:* ${date} | ${time}\n*Address:* ${address}${notes ? '\n*Notes:* ' + notes : ''}`;
     const waUrl = `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(waMessage)}`;
+
+    track('order_submitted', {
+      total,
+      item_count: items.length,
+      delivery_date: date,
+      delivery_time: time,
+      products: items.map(i => i.name)
+    });
 
     // Show success
     closeOrderForm();
@@ -1554,7 +1570,24 @@ function showSoldOutNotification(productName) {
 
 // ==================== INIT ====================
 
+// ==================== ANALYTICS ====================
+
+function track(event, props) {
+  try {
+    if (window.mixpanel) mixpanel.track(event, props || {});
+  } catch (e) {}
+}
+
+// ==================== INIT ====================
+
 document.addEventListener('DOMContentLoaded', () => {
+  track('page_viewed');
+
+  // Track WhatsApp button click on success screen
+  document.getElementById('whatsapp-btn').addEventListener('click', () => {
+    track('whatsapp_opened', { order_total: lastOrderTotal });
+  });
+
   // Start real-time listeners
   initRealtimeListeners();
 
