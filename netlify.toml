@@ -1,5 +1,8 @@
 [functions]
   directory = "netlify/functions"
 
+[build.environment]
+  SECRETS_SCAN_OMIT_PATHS = ".git"
+
 [[plugins]]
   package = "@netlify/plugin-functions-install-core"
