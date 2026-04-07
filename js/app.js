@@ -140,7 +140,7 @@ function renderCatalog() {
     const colorClass = PRODUCT_COLORS[i % PRODUCT_COLORS.length];
     const inCart = cart[p.id] || 0;
     const stockClass = p.stock === 0 ? 'out' : p.stock <= (p.lowStockThreshold || 5) ? 'low' : 'available';
-    const stockText = p.stock === 0 ? 'Out of Stock' : p.stock <= (p.lowStockThreshold || 5) ? `Only ${p.stock} left!` : `${p.stock} available`;
+    const stockText = p.stock === 0 ? 'Sold Out' : p.stock <= (p.lowStockThreshold || 5) ? `Only ${p.stock} left!` : `${p.stock} available`;
     const maxStock = p.maxStock || p.stock || 1;
     const stockPercent = maxStock > 0 ? Math.min(100, (p.stock / maxStock) * 100) : 0;
     const barColor = p.stock <= (p.lowStockThreshold || 5) ? 'bg-orange-400' : 'bg-leaf';
@@ -326,19 +326,24 @@ async function submitOrder(e) {
   try {
     // Save order to Firestore
     await ordersRef.add(order);
+    sendOrderEmail(order);
 
     // Decrement stock atomically in Firestore
     const batch = db.batch();
+    const soldOutItems = [];
     items.forEach(item => {
       const product = productsCache.find(p => p.id === item.productId);
       if (product) {
+        const newStock = Math.max(0, product.stock - item.qty);
         batch.update(productsRef.doc(item.productId), {
-          stock: Math.max(0, product.stock - item.qty),
+          stock: newStock,
           maxStock: product.maxStock || product.stock
         });
+        if (newStock === 0) soldOutItems.push(item.name);
       }
     });
     await batch.commit();
+    soldOutItems.forEach(name => showSoldOutNotification(name));
 
     // Build WhatsApp message
     const itemList = items.map(i => `  • ${i.name} × ${i.qty} (₹${i.subtotal})`).join('\n');
@@ -578,17 +583,15 @@ async function moveProduct(productId, direction) {
 
   if (swapIdx < 0 || swapIdx >= sorted.length) return;
 
-  const current = sorted[currentIdx];
-  const swap = sorted[swapIdx];
-
-  const tempOrder = current.sortOrder || currentIdx + 1;
-  current.sortOrder = swap.sortOrder || swapIdx + 1;
-  swap.sortOrder = tempOrder;
+  // Normalize all sortOrders to clean 1-based consecutive integers first,
+  // then swap — prevents collisions from undefined/duplicate sortOrder values
+  sorted.forEach((p, i) => { p.sortOrder = i + 1; });
+  sorted[currentIdx].sortOrder = swapIdx + 1;
+  sorted[swapIdx].sortOrder = currentIdx + 1;
 
   try {
     const batch = db.batch();
-    batch.update(productsRef.doc(current.id), { sortOrder: current.sortOrder });
-    batch.update(productsRef.doc(swap.id), { sortOrder: swap.sortOrder });
+    sorted.forEach(p => batch.update(productsRef.doc(p.id), { sortOrder: p.sortOrder }));
     await batch.commit();
     renderStockCards();
   } catch (err) {
@@ -797,6 +800,7 @@ async function addProduct() {
       lowStockThreshold: 5,
       deliveryDays: delivery,
       available: true,
+      sortOrder: Math.max(0, ...productsCache.map(p => p.sortOrder || 0)) + 1,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
@@ -1058,16 +1062,20 @@ async function submitCreateOrder(e) {
 
     // Decrement stock
     const batch = db.batch();
+    const soldOutItems = [];
     items.forEach(item => {
       const product = productsCache.find(p => p.id === item.productId);
       if (product) {
+        const newStock = Math.max(0, product.stock - item.qty);
         batch.update(productsRef.doc(item.productId), {
-          stock: Math.max(0, product.stock - item.qty),
+          stock: newStock,
           maxStock: product.maxStock || product.stock
         });
+        if (newStock === 0) soldOutItems.push(item.name);
       }
     });
     await batch.commit();
+    soldOutItems.forEach(name => showSoldOutNotification(name));
 
     closeCreateOrderModal();
     showToast(`Order created for ${name}`);
@@ -1515,6 +1523,33 @@ function showPushNotification(order) {
     oscillator.start();
     oscillator.stop(audioCtx.currentTime + 0.15);
   } catch (e) {}
+}
+
+async function sendOrderEmail(order) {
+  try {
+    await fetch('/.netlify/functions/send-order-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(order)
+    });
+  } catch (err) {
+    console.error('Email send failed:', err);
+  }
+}
+
+function showSoldOutNotification(productName) {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    const notification = new Notification(`🚨 ${productName} is Sold Out`, {
+      body: `Stock has hit zero. Time to replenish ${productName}!`,
+      icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="80">🚨</text></svg>',
+      tag: 'sold-out-' + productName,
+      requireInteraction: true
+    });
+    notification.onclick = function () {
+      window.focus();
+      notification.close();
+    };
+  }
 }
 
 // ==================== INIT ====================

@@ -18,6 +18,7 @@ const CONFIG = {
   upiPayeeName: 'Ainora Mane Thota'
 };
 
+
 // Initialize Firebase
 let db = null;
 let storage = null;
