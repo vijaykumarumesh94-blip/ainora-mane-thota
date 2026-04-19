@@ -354,9 +354,15 @@ body {
   transform: translateY(0) !important;
 }
 
-/* Cart right drawer open state */
+/* Cart open state — slides up on mobile, slides in from right on desktop */
 #cart-drawer.cart-drawer-open {
-  transform: translateX(0);
+  transform: translateY(0) !important;
+}
+
+@media (min-width: 768px) {
+  #cart-drawer.cart-drawer-open {
+    transform: translateX(0) !important;
+  }
 }
 
 /* Qty selector inside drawer — always green */

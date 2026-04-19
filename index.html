@@ -80,8 +80,8 @@
     </section>
 
     <!-- Floating Cart Bar -->
-    <!-- Floating Cart Pill -->
-    <div id="cart-pill" class="fixed bottom-6 right-4 z-50 hidden cursor-pointer" onclick="openCartDrawer()">
+    <!-- Floating Cart Pill — centered on mobile, right on desktop -->
+    <div id="cart-pill" class="fixed bottom-6 left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-6 z-50 hidden cursor-pointer" onclick="openCartDrawer()">
       <div class="flex items-center gap-3 bg-soil text-cream pl-4 pr-5 py-3 rounded-full shadow-2xl hover:bg-soil/90 active:scale-95 transition-all duration-200 select-none">
         <div class="relative">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -98,8 +98,8 @@
     <!-- Cart Drawer Overlay -->
     <div id="cart-overlay" class="fixed inset-0 bg-black/40 z-40 hidden" onclick="closeCartDrawer()"></div>
 
-    <!-- Cart Left Drawer -->
-    <div id="cart-drawer" class="fixed top-0 right-0 h-full w-[85vw] max-w-sm bg-cream z-50 shadow-2xl flex flex-col transform translate-x-full transition-transform duration-300">
+    <!-- Cart — bottom sheet on mobile, right drawer on desktop -->
+    <div id="cart-drawer" class="fixed bottom-0 left-0 right-0 max-h-[85vh] md:top-0 md:bottom-auto md:left-auto md:right-0 md:h-full md:w-80 md:max-h-full bg-cream z-50 shadow-2xl flex flex-col rounded-t-2xl md:rounded-none transform translate-y-full md:translate-y-0 md:translate-x-full transition-transform duration-300">
       <!-- Header -->
       <div class="flex items-center justify-between px-5 py-4 border-b border-soil/10 flex-shrink-0">
         <div class="flex items-center gap-2">
