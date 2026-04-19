@@ -1,7 +1,7 @@
 # Product Requirements Document
 ## Ainora Mane Thota — Farm Store Web Application
 
-**Version:** 1.0
+**Version:** 1.2
 **Date:** April 2026
 **Owner:** Vijay Kumar Umesh
 **Status:** Live
@@ -59,15 +59,25 @@ Single non-technical person — Vijay Kumar Umesh. They:
 - Badges: Limited stock, New this week, Best seller, Seasonal, Sold out soon
 - Only available products with stock > 0 are shown
 - Products displayed in admin-defined sort order
+- Product card turns green-bordered with green qty selector when item is added to cart — clear visual selected state
 
 #### Cart
 - Add/remove items with quantity selector
 - Max quantity capped at current stock
-- Floating cart bar showing item count and total
+- Floating cart pill (bottom-right corner) showing item count, first 2 product names, and grand total
+- Tap pill → right-side drawer slides in showing all cart items with photo/emoji, name, unit, qty controls, subtotal
+- **Bill Summary** in drawer: Items Total + Delivery Fee + To Pay
 - Cart persisted in localStorage (survives page refresh)
+
+#### Delivery Fee
+- ₹25 flat delivery fee added to all buyer orders automatically
+- Shown clearly in cart drawer bill summary and order form
+- Included in WhatsApp order message sent to admin
+- Saved in Firestore as separate `deliveryFee` field
 
 #### Order Placement
 - Order form modal: customer name, phone, delivery address, preferred delivery date, delivery time slot, optional notes
+- Order summary shows all items + delivery fee + grand total
 - On submit: order saved to Firestore, stock decremented atomically, WhatsApp deep link opened with pre-filled order summary
 - Success screen shown after order
 
@@ -81,6 +91,8 @@ Single non-technical person — Vijay Kumar Umesh. They:
 ### 3.2 Admin Panel
 
 **Access:** `ainoramanethota.in/#admin` → password login → session stored in localStorage
+
+**WhatsApp Business:** All order messages (new orders, confirmations, delivery updates) go via WhatsApp Business number `+91 7892108489`
 
 #### Dashboard
 - Total orders count
@@ -106,8 +118,8 @@ Single non-technical person — Vijay Kumar Umesh. They:
 - Per order: status dropdown (new → confirmed → delivered), payment toggle (paid/unpaid), WhatsApp button (pre-filled status message to customer), delete button
 - Delete restores stock for all items in the order
 - Filter orders by status and date range
-- Edit order: change items, quantities, delivery details (stock intelligently recalculated)
-- Create manual order: for phone/walk-in customers
+- Edit order: change items, quantities, delivery details (stock intelligently recalculated); delivery fee toggle (uncheck for pickup orders)
+- Create manual order: for phone/walk-in customers; delivery fee toggle (uncheck for pickup orders)
 - Export orders as CSV
 
 #### Notifications
@@ -115,6 +127,11 @@ Single non-technical person — Vijay Kumar Umesh. They:
 - Browser push notification when any product hits zero stock — prompts replenishment
 - Notification sound via Web Audio API
 - Email to `ainoramanethota@gmail.com` for every new customer order — full order details
+
+#### Analytics (Mixpanel)
+- Buyer-side funnel tracking only
+- Events tracked: `page_viewed`, `product_added_to_cart`, `product_removed_from_cart`, `order_form_opened`, `order_form_abandoned`, `order_submitted`, `whatsapp_opened`, `sold_out_product_seen`
+- Funnel configured in Mixpanel: page_viewed → product_added_to_cart → order_form_opened → order_submitted
 
 ---
 
@@ -133,7 +150,8 @@ available, sortOrder, badge, createdAt
 id, customerName, phone, address,
 deliveryDate, deliveryTime, notes,
 items: [{ productId, name, qty, price, subtotal }],
-total, status, paymentStatus,
+itemsTotal, deliveryFee, total,
+status, paymentStatus,
 source (website / phone / manual),
 createdAt, updatedAt
 ```
@@ -151,8 +169,9 @@ createdAt, updatedAt
 | Auth | Password + localStorage | Single admin, no OAuth complexity needed |
 | Push Notifications | Firebase Cloud Messaging | Free, integrates with existing Firebase project |
 | Email | Netlify Function + Nodemailer | Credentials never in code, free on Netlify |
+| Analytics | Mixpanel (free tier) | Buyer funnel tracking, drop-off analysis |
 | Payments | UPI deep links | No payment gateway fees, works with any UPI app |
-| Orders | WhatsApp click-to-chat | Zero friction, customers already use WhatsApp |
+| Orders | WhatsApp Business click-to-chat | Zero friction, sent from business number |
 | Hosting | Netlify | Free static hosting, auto-deploys from GitHub |
 | Domain | ainoramanethota.in | Custom branded domain via CNAME |
 
@@ -175,7 +194,7 @@ createdAt, updatedAt
 - **No backend server** — everything runs client-side or via Netlify serverless functions
 - **No npm/build step** — all dependencies via CDN, deployable as plain static files
 - **Single admin** — no multi-user roles required
-- **Free tier** — Firebase Spark plan, Netlify free tier, Gmail free
+- **Free tier** — Firebase Spark plan, Netlify free tier, Gmail free, Mixpanel free
 - **UPI payments on hold** — pending PhonePe business account approval
 
 ---
@@ -183,6 +202,7 @@ createdAt, updatedAt
 ## 8. Future Scope *(not committed)*
 
 - Re-enable UPI payment flow once PhonePe business account is approved
+- WhatsApp Business API automated messages (confirmed + delivered triggers) — on hold pending Instagram growth and business account setup
 - Customer order history (lookup by phone number)
 - Delivery slot management (block out dates)
 - Weekly harvest announcement push notification to subscribed buyers
@@ -196,3 +216,5 @@ createdAt, updatedAt
 | Version | Date | Changes |
 |---|---|---|
 | 1.0 | April 2026 | Initial PRD — full feature documentation of live product |
+| 1.1 | April 2026 | Added: email notifications, sold-out alerts, product reorder fix, "Sold Out" label, Mixpanel analytics, WhatsApp Business number |
+| 1.2 | April 2026 | Added: cart redesign (floating pill + right-side drawer + bill summary), ₹25 delivery fee, delivery fee toggle for admin pickup orders |
