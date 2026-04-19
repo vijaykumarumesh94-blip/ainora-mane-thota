@@ -15,7 +15,8 @@ const CONFIG = {
   adminPassword: 'magadi2025',
   currency: '₹',
   upiId: '7892325072@ybl',
-  upiPayeeName: 'Ainora Mane Thota'
+  upiPayeeName: 'Ainora Mane Thota',
+  deliveryFee: 25
 };
 
 

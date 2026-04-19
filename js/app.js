@@ -153,7 +153,7 @@ function renderCatalog() {
       : `<div class="emoji-fallback">${p.emoji}</div>`;
 
     return `
-      <div class="product-card bg-white rounded-2xl overflow-hidden shadow-sm relative">
+      <div class="product-card bg-white rounded-2xl overflow-hidden shadow-sm relative ${inCart > 0 ? 'in-cart' : ''}">
         ${p.badge ? `<div class="product-badge ${getBadgeClass(p.badge)}">${p.badge}</div>` : ''}
         <div class="product-image ${p.photoUrl ? '' : colorClass}">
           ${imageBlock}
@@ -217,27 +217,79 @@ function updateCart(productId, delta) {
 
 function updateCartBar() {
   const cart = getCart();
-  const bar = document.getElementById('cart-bar');
+  const pill = document.getElementById('cart-pill');
 
   let count = 0;
-  let total = 0;
+  let itemsTotal = 0;
+  const names = [];
+  const lineItems = [];
 
   Object.keys(cart).forEach(id => {
     const product = productsCache.find(p => p.id === id);
     if (product) {
-      count += cart[id];
-      total += cart[id] * product.price;
+      const qty = cart[id];
+      const subtotal = qty * product.price;
+      count += qty;
+      itemsTotal += subtotal;
+      names.push(product.name.split(' ')[0]);
+      lineItems.push({ product, qty, subtotal });
     }
   });
 
+  const grandTotal = itemsTotal + (count > 0 ? CONFIG.deliveryFee : 0);
+
+  // Update pill
   document.getElementById('cart-count').textContent = count;
-  document.getElementById('cart-total').textContent = total;
+  document.getElementById('cart-total').textContent = grandTotal;
+  const label = names.length <= 2 ? names.join(', ') : names.slice(0, 2).join(', ') + '…';
+  document.getElementById('cart-pill-items').textContent = label;
+
+  // Update drawer
+  document.getElementById('cart-items-total').textContent = itemsTotal;
+  document.getElementById('cart-delivery-fee').textContent = CONFIG.deliveryFee;
+  document.getElementById('cart-grand-total').textContent = grandTotal;
+
+  const drawerItems = document.getElementById('cart-drawer-items');
+  if (drawerItems) {
+    drawerItems.innerHTML = lineItems.map(({ product, qty, subtotal }) => `
+      <div class="flex items-center gap-3 py-3 border-b border-soil/6">
+        <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0 bg-soil/5 overflow-hidden">
+          ${product.photoUrl
+            ? `<img src="${product.photoUrl}" class="w-full h-full object-cover" />`
+            : `<span>${product.emoji}</span>`}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold text-sm text-soil truncate">${product.name}</div>
+          <div class="text-xs text-soil/50">₹${product.price} / ${product.unit}</div>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <div class="qty-selector ${qty > 0 ? 'in-cart-qty' : ''}">
+            <button onclick="updateCart('${product.id}', -1)">−</button>
+            <span class="qty-value">${qty}</span>
+            <button onclick="updateCart('${product.id}', 1)">+</button>
+          </div>
+          <div class="text-sm font-bold text-soil w-12 text-right">₹${subtotal}</div>
+        </div>
+      </div>
+    `).join('');
+  }
 
   if (count > 0) {
-    bar.classList.add('cart-visible');
+    pill.classList.remove('hidden');
   } else {
-    bar.classList.remove('cart-visible');
+    pill.classList.add('hidden');
+    closeCartDrawer();
   }
+}
+
+function openCartDrawer() {
+  document.getElementById('cart-drawer').classList.add('cart-drawer-open');
+  document.getElementById('cart-overlay').classList.remove('hidden');
+}
+
+function closeCartDrawer() {
+  document.getElementById('cart-drawer').classList.remove('cart-drawer-open');
+  document.getElementById('cart-overlay').classList.add('hidden');
 }
 
 // ==================== ORDER FORM ====================
@@ -263,14 +315,21 @@ function showOrderForm() {
     return;
   }
 
+  const grandTotal = total + CONFIG.deliveryFee;
+
   summary.innerHTML = items.map(item => `
     <div class="flex justify-between items-center text-sm">
       <span>${item.emoji} ${item.name} × ${item.qty}</span>
       <span class="font-semibold">₹${item.subtotal}</span>
     </div>
-  `).join('');
+  `).join('') + `
+    <div class="flex justify-between items-center text-sm text-soil/60 pt-1">
+      <span>Delivery Fee</span>
+      <span class="text-leaf font-semibold">₹${CONFIG.deliveryFee}</span>
+    </div>
+  `;
 
-  document.getElementById('order-total').textContent = total;
+  document.getElementById('order-total').textContent = grandTotal;
   document.getElementById('order-modal').classList.remove('hidden');
   document.getElementById('order-modal').classList.add('flex');
   track('order_form_opened', { cart_total: total, item_count: items.length });
@@ -318,6 +377,8 @@ async function submitOrder(e) {
 
   if (items.length === 0) return;
 
+  const grandTotal = total + CONFIG.deliveryFee;
+
   const order = {
     customerName: name,
     phone,
@@ -326,7 +387,9 @@ async function submitOrder(e) {
     deliveryTime: time,
     notes,
     items,
-    total,
+    itemsTotal: total,
+    deliveryFee: CONFIG.deliveryFee,
+    total: grandTotal,
     status: 'new',
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   };
@@ -355,7 +418,7 @@ async function submitOrder(e) {
 
     // Build WhatsApp message
     const itemList = items.map(i => `  • ${i.name} × ${i.qty} (₹${i.subtotal})`).join('\n');
-    const waMessage = `🌿 *New Order — Ainora Mane Thota*\n\n*${name}* (${phone})\n\n*Items:*\n${itemList}\n\n*Total: ₹${total}*\n\n*Delivery:* ${date} | ${time}\n*Address:* ${address}${notes ? '\n*Notes:* ' + notes : ''}`;
+    const waMessage = `🌿 *New Order — Ainora Mane Thota*\n\n*${name}* (${phone})\n\n*Items:*\n${itemList}\n\n*Items Total: ₹${total}*\n*Delivery Fee: ₹${CONFIG.deliveryFee}*\n*Total: ₹${grandTotal}*\n\n*Delivery:* ${date} | ${time}\n*Address:* ${address}${notes ? '\n*Notes:* ' + notes : ''}`;
     const waUrl = `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(waMessage)}`;
 
     track('order_submitted', {
@@ -1008,16 +1071,18 @@ function renderManualProductsList() {
 }
 
 function updateManualOrderTotal() {
-  let total = 0;
+  let itemsTotal = 0;
   document.querySelectorAll('.manual-product-check:checked').forEach(cb => {
     const id = cb.dataset.id;
     const product = productsCache.find(p => p.id === id);
     const qtyInput = document.querySelector(`.manual-qty[data-id="${id}"]`);
     if (product && qtyInput) {
       const qty = Math.max(1, parseInt(qtyInput.value) || 1);
-      total += qty * product.price;
+      itemsTotal += qty * product.price;
     }
   });
+  const includeDelivery = document.getElementById('manual-delivery-fee')?.checked;
+  const total = itemsTotal + (includeDelivery ? CONFIG.deliveryFee : 0);
   document.getElementById('manual-order-total').textContent = total;
 }
 
@@ -1058,6 +1123,10 @@ async function submitCreateOrder(e) {
     return;
   }
 
+  const includeDelivery = document.getElementById('manual-delivery-fee')?.checked;
+  const deliveryFee = includeDelivery ? CONFIG.deliveryFee : 0;
+  const grandTotal = total + deliveryFee;
+
   const order = {
     customerName: name,
     phone,
@@ -1067,7 +1136,9 @@ async function submitCreateOrder(e) {
     notes: notes || '',
     source,
     items,
-    total,
+    itemsTotal: total,
+    deliveryFee,
+    total: grandTotal,
     status: 'confirmed',
     paymentStatus: 'unpaid',
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -1276,6 +1347,10 @@ function showEditOrderModal(orderId) {
   const sourceSelect = document.getElementById('edit-source');
   sourceSelect.value = order.source || 'website';
 
+  // Pre-set delivery fee checkbox based on saved order (default true if not set)
+  const editDeliveryCheck = document.getElementById('edit-delivery-fee');
+  if (editDeliveryCheck) editDeliveryCheck.checked = order.deliveryFee !== 0;
+
   renderEditProductsList(order.items || []);
 
   document.getElementById('edit-order-modal').classList.remove('hidden');
@@ -1335,16 +1410,18 @@ function renderEditProductsList(existingItems) {
 }
 
 function updateEditOrderTotal() {
-  let total = 0;
+  let itemsTotal = 0;
   document.querySelectorAll('.edit-product-check:checked').forEach(cb => {
     const id = cb.dataset.id;
     const qtyInput = document.querySelector(`.edit-qty[data-id="${id}"]`);
     if (qtyInput) {
       const qty = Math.max(1, parseInt(qtyInput.value) || 1);
       const price = parseFloat(qtyInput.dataset.price || 0);
-      total += qty * price;
+      itemsTotal += qty * price;
     }
   });
+  const includeDelivery = document.getElementById('edit-delivery-fee')?.checked;
+  const total = itemsTotal + (includeDelivery ? CONFIG.deliveryFee : 0);
   document.getElementById('edit-order-total').textContent = total;
 }
 
@@ -1405,6 +1482,10 @@ async function submitEditOrder(e) {
       }
     });
 
+    const includeDelivery = document.getElementById('edit-delivery-fee')?.checked;
+    const deliveryFee = includeDelivery ? CONFIG.deliveryFee : 0;
+    const grandTotal = total + deliveryFee;
+
     // Update the order document
     batch.update(ordersRef.doc(orderId), {
       customerName: name,
@@ -1415,7 +1496,9 @@ async function submitEditOrder(e) {
       source,
       notes,
       items: newItems,
-      total,
+      itemsTotal: total,
+      deliveryFee,
+      total: grandTotal,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
