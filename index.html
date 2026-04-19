@@ -136,8 +136,8 @@
     </div>
 
     <!-- Order Form Modal -->
-    <div id="order-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
-      <div class="bg-cream rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div id="order-modal" class="fixed inset-0 bg-black/50 z-[60] hidden items-center justify-center p-2 md:p-4">
+      <div class="bg-cream rounded-2xl max-w-lg w-full max-h-[95vh] overflow-y-auto shadow-2xl">
         <div class="p-6">
           <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-3">
@@ -169,7 +169,7 @@
                 <label class="block text-sm font-semibold mb-1">Phone Number *</label>
                 <input type="tel" id="cust-phone" required
                   class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50"
-                  placeholder="9XXXXXXXXX" pattern="[0-9]{10}" />
+                  placeholder="9XXXXXXXXX" inputmode="numeric" />
               </div>
               <div>
                 <label class="block text-sm font-semibold mb-1">Delivery Address (Bengaluru) *</label>
@@ -212,7 +212,7 @@
     </div>
 
     <!-- Success Screen -->
-    <div id="success-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+    <div id="success-modal" class="fixed inset-0 bg-black/50 z-[70] hidden items-center justify-center p-4">
       <div class="bg-cream rounded-2xl max-w-md w-full shadow-2xl text-center p-8">
         <img src="assets/logo.png" alt="Ainora Mane Thota" class="w-16 h-16 mx-auto mb-4 object-contain" />
         <h2 class="font-display text-3xl font-bold mb-2">Order Received!</h2>
@@ -788,7 +788,7 @@
 
   <!-- Toast Notification -->
   <div id="toast"
-    class="fixed top-4 right-4 bg-leaf text-cream px-6 py-3 rounded-xl shadow-lg transform translate-x-full transition-transform duration-300 z-50 flex items-center gap-2">
+    class="fixed top-4 right-4 bg-leaf text-cream px-6 py-3 rounded-xl shadow-lg transform translate-x-full transition-transform duration-300 z-[200] flex items-center gap-2">
     <span>✓</span>
     <span id="toast-msg">Saved!</span>
   </div>

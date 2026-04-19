@@ -377,6 +377,11 @@ async function submitOrder(e) {
 
   if (items.length === 0) return;
 
+  if (!ordersRef) {
+    showToast('Connection error. Please refresh and try again.');
+    return;
+  }
+
   const grandTotal = total + CONFIG.deliveryFee;
 
   const order = {
