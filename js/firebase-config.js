@@ -11,7 +11,7 @@ const firebaseConfig = {
 
 // Configuration
 const CONFIG = {
-  whatsappNumber: '917892325072',
+  whatsappNumber: '917892108489',
   adminPassword: 'magadi2025',
   currency: '₹',
   upiId: '7892325072@ybl',
