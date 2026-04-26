@@ -463,28 +463,18 @@ function closeSuccess() {
 let lastOrderTotal = 0;
 
 function showPaymentModal() {
-  const upiId = CONFIG.upiId;
-  const payeeName = CONFIG.upiPayeeName;
-  const amount = lastOrderTotal;
-  const txnRef = 'AFT-' + Date.now();
+  const grandTotal = lastOrderTotal + CONFIG.deliveryFee;
 
-  // UPI payment string
-  const upiString = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=${encodeURIComponent('Ainora Mane Thota Order')}&tr=${txnRef}`;
+  document.getElementById('payment-amount').textContent = grandTotal;
+  document.getElementById('payment-delivery-fee').textContent = CONFIG.deliveryFee;
+  document.getElementById('upi-id-display').textContent = CONFIG.upiId;
 
-  // Set amount display
-  document.getElementById('payment-amount').textContent = amount;
-  document.getElementById('upi-id-display').textContent = upiId;
+  const msg = `Hi! 🌿 I've just completed the payment of ₹${grandTotal} for my Ainora Mane Thota order via PhonePe QR. Kindly confirm once the payment is received. Can't wait for the fresh produce — thank you! 🥬`;
+  document.getElementById('payment-notify-btn').href = `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(msg)}`;
 
-  // UPI app deep links
-  document.getElementById('phonepe-link').href = `phonepe://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=Order`;
-  document.getElementById('gpay-link').href = `tez://upi/pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=Order`;
-  document.getElementById('paytm-link').href = `paytmmp://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=Order`;
+  document.getElementById('success-modal').classList.add('hidden');
+  document.getElementById('success-modal').classList.remove('flex');
 
-  // QR code via goqr.me API
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiString)}`;
-  document.getElementById('qr-code').src = qrUrl;
-
-  // Show modal
   document.getElementById('payment-modal').classList.remove('hidden');
   document.getElementById('payment-modal').classList.add('flex');
 }
@@ -848,6 +838,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function addProduct() {
+  if (!productsRef) {
+    showToast('Database not connected. Please refresh and try again.');
+    return;
+  }
+
   const name = document.getElementById('new-name').value.trim();
   const kannada = document.getElementById('new-kannada').value.trim();
   const emoji = document.getElementById('new-emoji').value.trim() || '🌾';
@@ -857,10 +852,25 @@ async function addProduct() {
   const delivery = document.getElementById('new-delivery').value;
   const photoFile = document.getElementById('new-photo').files[0];
 
-  if (!name || !price || stock < 0) {
-    showToast('Please fill required fields');
+  if (!name) {
+    showToast('Please enter a product name');
+    document.getElementById('new-name').focus();
     return;
   }
+  if (!price || price <= 0) {
+    showToast('Please enter a valid price');
+    document.getElementById('new-price').focus();
+    return;
+  }
+  if (stock < 0) {
+    showToast('Stock cannot be negative');
+    document.getElementById('new-stock').focus();
+    return;
+  }
+
+  const btn = document.getElementById('add-product-btn');
+  btn.disabled = true;
+  btn.textContent = 'Adding...';
 
   let photoUrl = null;
   if (photoFile) {
@@ -888,7 +898,6 @@ async function addProduct() {
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
-    // Reset form
     document.getElementById('new-name').value = '';
     document.getElementById('new-kannada').value = '';
     document.getElementById('new-emoji').value = '';
@@ -900,7 +909,10 @@ async function addProduct() {
     showToast(`${name} added to catalog`);
   } catch (err) {
     console.error('Add product error:', err);
-    showToast('Failed to add product');
+    showToast('Failed to add product: ' + (err.message || 'Unknown error'));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Add Product';
   }
 }
 
