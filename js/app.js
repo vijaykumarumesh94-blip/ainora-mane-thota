@@ -464,10 +464,19 @@ let lastOrderTotal = 0;
 
 function showPaymentModal() {
   const grandTotal = lastOrderTotal + CONFIG.deliveryFee;
+  const upiId = encodeURIComponent(CONFIG.upiId);
+  const payeeName = encodeURIComponent(CONFIG.upiPayeeName);
+  const note = encodeURIComponent('Ainora Mane Thota Order');
 
   document.getElementById('payment-amount').textContent = grandTotal;
   document.getElementById('payment-delivery-fee').textContent = CONFIG.deliveryFee;
   document.getElementById('upi-id-display').textContent = CONFIG.upiId;
+
+  // UPI app deep links with pre-filled amount
+  document.getElementById('phonepe-btn').href = `phonepe://pay?pa=${upiId}&pn=${payeeName}&am=${grandTotal}&cu=INR&tn=${note}`;
+  document.getElementById('gpay-btn').href = `tez://upi/pay?pa=${upiId}&pn=${payeeName}&am=${grandTotal}&cu=INR&tn=${note}`;
+  document.getElementById('paytm-btn').href = `paytmmp://pay?pa=${upiId}&pn=${payeeName}&am=${grandTotal}&cu=INR&tn=${note}`;
+  document.getElementById('cred-btn').href = `credpay://pay?pa=${upiId}&pn=${payeeName}&am=${grandTotal}&cu=INR&tn=${note}`;
 
   const msg = `Hi! 🌿 I've just completed the payment of ₹${grandTotal} for my Ainora Mane Thota order via PhonePe QR. Kindly confirm once the payment is received. Can't wait for the fresh produce — thank you! 🥬`;
   document.getElementById('payment-notify-btn').href = `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(msg)}`;
