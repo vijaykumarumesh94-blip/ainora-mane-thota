@@ -424,8 +424,27 @@ async function submitOrder(e) {
     soldOutItems.forEach(name => showSoldOutNotification(name));
 
     // Build WhatsApp message
-    const itemList = items.map(i => `  • ${i.name} × ${i.qty} (₹${i.subtotal})`).join('\n');
-    const waMessage = `🌿 *New Order — Ainora Mane Thota*\n\n*${name}* (${phone})\n\n*Items:*\n${itemList}\n\n*Items Total: ₹${total}*\n*Delivery Fee: ₹${CONFIG.deliveryFee}*\n*Total: ₹${grandTotal}*\n\n*Delivery:* ${date} | ${time}\n*Address:* ${address}${notes ? '\n*Notes:* ' + notes : ''}`;
+    const itemList = items.map(i => `  • ${i.name} × ${i.qty} — ₹${i.subtotal}`).join('\n');
+    const deliveryDateFormatted = new Date(date).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const waMessage = [
+      `Hi! 👋 I just placed an order on Ainora Mane Thota. Here are my details:`,
+      ``,
+      `*Name:* ${name}`,
+      `*Phone:* ${phone}`,
+      `*Address:* ${address}`,
+      ``,
+      `*My Order:*`,
+      itemList,
+      ``,
+      `*Items Total:* ₹${total}`,
+      `*Delivery Fee:* ₹${CONFIG.deliveryFee}`,
+      `*Total:* ₹${grandTotal}`,
+      ``,
+      `*Delivery:* ${deliveryDateFormatted} | ${time}`,
+      notes ? `*Notes:* ${notes}` : null,
+      ``,
+      `Please confirm once you've received this. Thank you! 🌿`,
+    ].filter(line => line !== null).join('\n');
     const waUrl = `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(waMessage)}`;
 
     track('order_submitted', {
@@ -443,6 +462,7 @@ async function submitOrder(e) {
     document.getElementById('whatsapp-btn').href = waUrl;
     document.getElementById('success-modal').classList.remove('hidden');
     document.getElementById('success-modal').classList.add('flex');
+    startWhatsAppCountdown(waUrl);
 
     // Clear cart
     saveCart({});
@@ -456,8 +476,38 @@ async function submitOrder(e) {
 }
 
 function closeSuccess() {
+  cancelCountdown();
   document.getElementById('success-modal').classList.add('hidden');
   document.getElementById('success-modal').classList.remove('flex');
+}
+
+let waCountdownTimer = null;
+
+function startWhatsAppCountdown(waUrl) {
+  cancelCountdown();
+  let sec = 5;
+  const secEl = document.getElementById('wa-countdown-sec');
+  const countdownEl = document.getElementById('wa-countdown');
+  if (secEl) secEl.textContent = sec;
+
+  waCountdownTimer = setInterval(() => {
+    sec--;
+    if (secEl) secEl.textContent = sec;
+    if (sec <= 0) {
+      cancelCountdown();
+      if (countdownEl) countdownEl.textContent = 'Opening WhatsApp…';
+      window.open(waUrl, '_blank');
+    }
+  }, 1000);
+}
+
+function cancelCountdown() {
+  if (waCountdownTimer) {
+    clearInterval(waCountdownTimer);
+    waCountdownTimer = null;
+  }
+  const countdownEl = document.getElementById('wa-countdown');
+  if (countdownEl) countdownEl.textContent = '';
 }
 
 // ==================== PAYMENT ====================
