@@ -351,6 +351,7 @@ async function submitOrder(e) {
 
   const name = document.getElementById('cust-name').value.trim();
   const phone = document.getElementById('cust-phone').value.trim();
+  const email = document.getElementById('cust-email').value.trim();
   const address = document.getElementById('cust-address').value.trim();
   const date = document.getElementById('cust-date').value;
   const time = document.getElementById('cust-time').value;
@@ -387,6 +388,7 @@ async function submitOrder(e) {
   const order = {
     customerName: name,
     phone,
+    email: email || null,
     address,
     deliveryDate: date,
     deliveryTime: time,
@@ -461,50 +463,6 @@ function closeSuccess() {
 // ==================== PAYMENT ====================
 
 let lastOrderTotal = 0;
-
-function showPaymentModal() {
-  const grandTotal = lastOrderTotal + CONFIG.deliveryFee;
-  const upiId = encodeURIComponent(CONFIG.upiId);
-  const payeeName = encodeURIComponent(CONFIG.upiPayeeName);
-  const note = encodeURIComponent('Ainora Mane Thota Order');
-
-  document.getElementById('payment-amount').textContent = grandTotal;
-  document.getElementById('payment-delivery-fee').textContent = CONFIG.deliveryFee;
-  document.getElementById('upi-id-display').textContent = CONFIG.upiId;
-
-  // UPI app deep links with pre-filled amount
-  document.getElementById('phonepe-btn').href = `phonepe://pay?pa=${upiId}&pn=${payeeName}&am=${grandTotal}&cu=INR&tn=${note}`;
-  document.getElementById('gpay-btn').href = `tez://upi/pay?pa=${upiId}&pn=${payeeName}&am=${grandTotal}&cu=INR&tn=${note}`;
-  document.getElementById('paytm-btn').href = `paytmmp://pay?pa=${upiId}&pn=${payeeName}&am=${grandTotal}&cu=INR&tn=${note}`;
-  document.getElementById('cred-btn').href = `credpay://pay?pa=${upiId}&pn=${payeeName}&am=${grandTotal}&cu=INR&tn=${note}`;
-
-  const msg = `Hi! 🌿 I've just completed the payment of ₹${grandTotal} for my Ainora Mane Thota order via PhonePe QR. Kindly confirm once the payment is received. Can't wait for the fresh produce — thank you! 🥬`;
-  document.getElementById('payment-notify-btn').href = `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(msg)}`;
-
-  document.getElementById('success-modal').classList.add('hidden');
-  document.getElementById('success-modal').classList.remove('flex');
-
-  document.getElementById('payment-modal').classList.remove('hidden');
-  document.getElementById('payment-modal').classList.add('flex');
-}
-
-function closePaymentModal() {
-  document.getElementById('payment-modal').classList.add('hidden');
-  document.getElementById('payment-modal').classList.remove('flex');
-}
-
-function copyUpiId() {
-  const upiId = CONFIG.upiId;
-  navigator.clipboard.writeText(upiId).then(() => {
-    const label = document.getElementById('copy-label');
-    label.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Copied!';
-    label.classList.add('text-leaf');
-    setTimeout(() => {
-      label.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Tap to copy';
-      label.classList.remove('text-leaf');
-    }, 2000);
-  });
-}
 
 // ==================== ADMIN ====================
 

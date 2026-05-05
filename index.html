@@ -81,8 +81,8 @@
 
     <!-- Floating Cart Bar -->
     <!-- Floating Cart Pill — centered on mobile, right on desktop -->
-    <div id="cart-pill" class="fixed bottom-6 left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-6 z-50 hidden cursor-pointer" onclick="openCartDrawer()">
-      <div class="flex items-center gap-3 bg-soil text-cream pl-4 pr-5 py-3 rounded-full shadow-2xl hover:bg-soil/90 active:scale-95 transition-all duration-200 select-none">
+    <div id="cart-pill" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 hidden cursor-pointer" onclick="openCartDrawer()">
+      <div class="flex items-center gap-3 bg-leaf text-cream pl-4 pr-5 py-3 rounded-full shadow-2xl shadow-leaf/40 hover:bg-leaf-dark active:scale-95 transition-all duration-200 select-none">
         <div class="relative">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
@@ -91,7 +91,7 @@
         </div>
         <div class="w-px h-5 bg-cream/20"></div>
         <span id="cart-pill-items" class="text-sm font-semibold"></span>
-        <div class="bg-leaf text-cream text-sm font-bold px-3 py-1 rounded-full">₹<span id="cart-total">0</span></div>
+        <div class="bg-terracotta text-cream text-sm font-bold px-3 py-1 rounded-full">₹<span id="cart-total">0</span></div>
       </div>
     </div>
 
@@ -172,6 +172,12 @@
                   placeholder="9XXXXXXXXX" inputmode="numeric" />
               </div>
               <div>
+                <label class="block text-sm font-semibold mb-1">Email Address <span class="text-soil/50 font-normal">(for order confirmation)</span></label>
+                <input type="email" id="cust-email"
+                  class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50"
+                  placeholder="you@example.com" />
+              </div>
+              <div>
                 <label class="block text-sm font-semibold mb-1">Delivery Address (Bengaluru) *</label>
                 <textarea id="cust-address" required rows="2"
                   class="w-full border border-soil/20 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-leaf/50 resize-none"
@@ -203,7 +209,7 @@
             </div>
             <button type="submit"
               class="w-full mt-6 bg-leaf hover:bg-leaf-dark text-cream font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2">
-              <span>Proceed for checkout</span>
+              <span>Click here to confirm the order</span>
               <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
             </button>
           </form>
@@ -227,124 +233,12 @@
             </svg>
             Get Real-Time Updates on WhatsApp
           </a>
-          <button type="button" onclick="showPaymentModal()"
-            class="inline-flex items-center gap-2 bg-soil hover:bg-soil/90 text-cream font-bold px-8 py-3 rounded-full transition-all w-full justify-center">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/></svg>
-            Pay Now
-          </button>
         </div>
         <br />
         <button onclick="closeSuccess()" class="text-soil/50 hover:text-soil text-sm underline">Back to Shop</button>
       </div>
     </div>
 
-    <div id="payment-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-end justify-center sm:items-center sm:p-4">
-      <div class="bg-cream rounded-t-3xl sm:rounded-2xl max-w-md w-full shadow-2xl max-h-[95vh] overflow-y-auto">
-        <div class="p-6">
-
-          <!-- Header -->
-          <div class="flex items-center justify-between mb-5">
-            <h2 class="font-display text-2xl font-bold">Pay via UPI</h2>
-            <button type="button" onclick="closePaymentModal()" class="text-soil/40 hover:text-soil text-2xl leading-none">&times;</button>
-          </div>
-
-          <!-- Amount -->
-          <div class="bg-white rounded-2xl p-4 mb-5 text-center">
-            <p class="text-soil/50 text-xs font-medium uppercase tracking-wide mb-1">Total Amount to Pay</p>
-            <p class="text-5xl font-black text-soil">₹<span id="payment-amount">0</span></p>
-            <p class="text-soil/40 text-xs mt-1">Includes ₹<span id="payment-delivery-fee">25</span> delivery fee</p>
-          </div>
-
-          <!-- UPI App Buttons -->
-          <p class="text-soil/50 text-xs font-semibold uppercase tracking-wide mb-3">Pay directly with your app</p>
-          <div class="grid grid-cols-2 gap-3 mb-5">
-
-            <!-- PhonePe -->
-            <a id="phonepe-btn" href="#"
-              class="flex items-center gap-3 bg-white rounded-2xl px-4 py-3 hover:shadow-md transition-all active:scale-95">
-              <img src="assets/logo-phonepe.png" alt="PhonePe" class="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
-              <div>
-                <div class="font-bold text-sm text-soil">PhonePe</div>
-                <div class="text-soil/40 text-xs">Tap to open</div>
-              </div>
-            </a>
-
-            <!-- GPay -->
-            <a id="gpay-btn" href="#"
-              class="flex items-center gap-3 bg-white rounded-2xl px-4 py-3 hover:shadow-md transition-all active:scale-95">
-              <div class="w-10 h-10 rounded-xl border border-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                <svg class="w-7 h-7" viewBox="0 0 48 48">
-                  <path fill="#4285F4" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                  <path fill="#34A853" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                  <path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 010-9.18l-7.98-6.19a24.03 24.03 0 000 21.56l7.98-6.19z"/>
-                  <path fill="#EA4335" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-                </svg>
-              </div>
-              <div>
-                <div class="font-bold text-sm text-soil">GPay</div>
-                <div class="text-soil/40 text-xs">Tap to open</div>
-              </div>
-            </a>
-
-            <!-- Paytm -->
-            <a id="paytm-btn" href="#"
-              class="flex items-center gap-3 bg-white rounded-2xl px-4 py-3 hover:shadow-md transition-all active:scale-95">
-              <img src="assets/logo-paytm.png" alt="Paytm" class="w-10 h-10 rounded-xl object-contain flex-shrink-0 border border-gray-100" />
-              <div>
-                <div class="font-bold text-sm text-soil">Paytm</div>
-                <div class="text-soil/40 text-xs">Tap to open</div>
-              </div>
-            </a>
-
-            <!-- CRED -->
-            <a id="cred-btn" href="#"
-              class="flex items-center gap-3 bg-white rounded-2xl px-4 py-3 hover:shadow-md transition-all active:scale-95">
-              <img src="assets/logo-cred.png" alt="CRED" class="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
-              <div>
-                <div class="font-bold text-sm text-soil">CRED</div>
-                <div class="text-soil/40 text-xs">Tap to open</div>
-              </div>
-            </a>
-
-          </div>
-
-          <!-- Divider -->
-          <div class="flex items-center gap-3 mb-5">
-            <div class="flex-1 h-px bg-soil/10"></div>
-            <span class="text-soil/40 text-xs font-semibold uppercase tracking-wide">Or scan QR code</span>
-            <div class="flex-1 h-px bg-soil/10"></div>
-          </div>
-
-          <!-- QR Code -->
-          <div class="bg-white rounded-2xl p-4 mb-4 text-center">
-            <img src="assets/payment-qr.png" alt="PhonePe UPI QR Code" class="w-52 h-52 mx-auto object-contain" />
-            <p class="text-soil/40 text-xs mt-2">Scan with any UPI app</p>
-          </div>
-
-          <!-- UPI ID copy -->
-          <div class="bg-white rounded-xl p-3 flex items-center justify-between cursor-pointer mb-5" onclick="copyUpiId()">
-            <div>
-              <div class="text-soil/50 text-xs">UPI ID</div>
-              <div class="font-semibold text-sm" id="upi-id-display">7892325072@ybl</div>
-            </div>
-            <div class="text-soil/40 text-xs flex items-center gap-1" id="copy-label">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-              Tap to copy
-            </div>
-          </div>
-
-          <!-- Paid — notify on WhatsApp -->
-          <a id="payment-notify-btn" href="#" target="_blank"
-            class="flex items-center justify-center gap-3 bg-[#25D366] hover:bg-[#128C7E] text-white font-bold px-6 py-4 rounded-2xl transition-all w-full text-center">
-            <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-            </svg>
-            <span>I've paid! Click here to notify</span>
-          </a>
-
-        </div>
-      </div>
-    </div>
 
     <!-- Footer -->
     <footer class="bg-soil text-cream/60 text-center text-sm py-8 px-4">
