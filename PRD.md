@@ -1,7 +1,7 @@
 # Product Requirements Document
 ## Ainora Mane Thota — Farm Store Web Application
 
-**Version:** 1.3
+**Version:** 1.4
 **Date:** May 2026
 **Owner:** Vijay Kumar Umesh
 **Status:** Live
@@ -64,7 +64,7 @@ Single non-technical person — Vijay Kumar Umesh. They:
 #### Cart
 - Add/remove items with quantity selector
 - Max quantity capped at current stock
-- Floating cart pill (bottom-center on all screen sizes) showing item count, first 2 product names, and grand total; forest green background with terracotta price badge
+- Floating cart pill (bottom-center on all screen sizes) showing item count, first 2 product names, and grand total; forest green (`leaf`) background with terracotta price badge
 - Tap pill → right-side drawer slides in showing all cart items with photo/emoji, name, unit, qty controls, subtotal
 - **Bill Summary** in drawer: Items Total + Delivery Fee + To Pay
 - Cart persisted in localStorage (survives page refresh)
@@ -80,8 +80,11 @@ Single non-technical person — Vijay Kumar Umesh. They:
 - Order summary shows all items + delivery fee + grand total
 - Submit button labelled "Click here to confirm the order"
 - On submit: order saved to Firestore, stock decremented atomically, WhatsApp deep link opened with pre-filled order summary
-- If customer provides email, an order confirmation email is sent to them with full order breakdown
-- Success screen shown after order
+- If customer provides email, a warm confirmation email is sent with order summary, human-readable delivery date, and a note that the farm will reach out on WhatsApp to confirm
+- Success screen reframed as "One Last Step!" — order feels incomplete until WhatsApp is tapped
+- 5-second countdown auto-redirects customer to WhatsApp after order; cancelled if they tap manually
+- Pre-filled WhatsApp message written from the customer's voice — includes greeting, full order details, human-readable date, and a confirmation ask
+- WhatsApp button has a pulsing glow animation to draw attention
 
 #### UPI Payment *(removed — pending third-party integration)*
 - Payment section and Pay Now button removed from the success screen
@@ -221,3 +224,4 @@ createdAt, updatedAt
 | 1.1 | April 2026 | Added: email notifications, sold-out alerts, product reorder fix, "Sold Out" label, Mixpanel analytics, WhatsApp Business number |
 | 1.2 | April 2026 | Added: cart redesign (floating pill + right-side drawer + bill summary), ₹25 delivery fee, delivery fee toggle for admin pickup orders |
 | 1.3 | May 2026 | Added: optional email field on order form with customer confirmation email; cart pill centered on all screens with forest green + terracotta styling; checkout button renamed; payment section removed pending third-party integration |
+| 1.4 | May 2026 | Improved WhatsApp engagement: success screen reframed as "One Last Step!", 5s auto-redirect countdown, pulsing button animation, customer-voice pre-filled WhatsApp message; confirmation email rewritten with warm tone, honest confirmation expectation, and human-readable date |
