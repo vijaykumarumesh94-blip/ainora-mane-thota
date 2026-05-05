@@ -21,6 +21,9 @@ exports.handler = async (event) => {
   });
 
   const itemLines = order.items.map(i => `  • ${i.name} x${i.qty} — ₹${i.subtotal}`).join('\n');
+  const deliveryDateFormatted = new Date(order.deliveryDate).toLocaleDateString('en-IN', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  });
 
   // Notify store owner
   const ownerMail = {
@@ -38,8 +41,10 @@ Address:  ${order.address}
 Items:
 ${itemLines}
 
+Items Total: ₹${order.itemsTotal}
+Delivery Fee: ₹${order.deliveryFee}
 Total:    ₹${order.total}
-Delivery: ${order.deliveryDate} | ${order.deliveryTime}
+Delivery: ${deliveryDateFormatted} | ${order.deliveryTime}
 Notes:    ${order.notes || '—'}
     `.trim()
   };
@@ -48,31 +53,30 @@ Notes:    ${order.notes || '—'}
   const customerMail = order.email ? {
     from: `"Ainora Mane Thota" <${process.env.GMAIL_USER}>`,
     to: order.email,
-    subject: `Order Confirmed — Ainora Mane Thota 🌿`,
+    subject: `Thank you for your order, ${order.customerName}! 🌿`,
     text: `
-Hi ${order.customerName},
+Hi ${order.customerName}! 👋
 
-Thank you for your order! We've received it and will get it ready for you.
+Thank you so much for ordering from Ainora Mane Thota — we're really happy to have you!
 
-─────────────────────────────
-ORDER SUMMARY
-─────────────────────────────
-Items:
-${itemLines}
+We've received your order and will reach out to you on WhatsApp soon to confirm it. Please keep an eye out for our message.
 
-Items Total: ₹${order.itemsTotal}
-Delivery Fee: ₹${order.deliveryFee}
-Total: ₹${order.total}
+Here's a summary of what you ordered:
 
-Delivery: ${order.deliveryDate} | ${order.deliveryTime}
-Address: ${order.address}
-${order.notes ? `\nNotes: ${order.notes}` : ''}
-─────────────────────────────
+  ${itemLines}
 
-If you have any questions, feel free to reach out to us on WhatsApp.
+  Items Total:  ₹${order.itemsTotal}
+  Delivery Fee: ₹${order.deliveryFee}
+  Total:        ₹${order.total}
+
+  Delivery: ${deliveryDateFormatted} | ${order.deliveryTime}
+  Address:  ${order.address}
+${order.notes ? `  Notes:    ${order.notes}\n` : ''}
+Fresh from our farm in Magadi, straight to your door. 🌱
 
 With love,
-Ainora Mane Thota 🌿
+Ainora Mane Thota
+Magadi, Karnataka
     `.trim()
   } : null;
 

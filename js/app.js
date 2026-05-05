@@ -404,7 +404,6 @@ async function submitOrder(e) {
   try {
     // Save order to Firestore
     await ordersRef.add(order);
-    sendOrderEmail(order);
 
     // Decrement stock atomically in Firestore
     const batch = db.batch();
@@ -446,6 +445,7 @@ async function submitOrder(e) {
       `Please confirm once you've received this. Thank you! 🌿`,
     ].filter(line => line !== null).join('\n');
     const waUrl = `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(waMessage)}`;
+    sendOrderEmail(order);
 
     track('order_submitted', {
       total,
