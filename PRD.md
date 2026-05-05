@@ -1,8 +1,8 @@
 # Product Requirements Document
 ## Ainora Mane Thota — Farm Store Web Application
 
-**Version:** 1.2
-**Date:** April 2026
+**Version:** 1.3
+**Date:** May 2026
 **Owner:** Vijay Kumar Umesh
 **Status:** Live
 
@@ -64,7 +64,7 @@ Single non-technical person — Vijay Kumar Umesh. They:
 #### Cart
 - Add/remove items with quantity selector
 - Max quantity capped at current stock
-- Floating cart pill (bottom-right corner) showing item count, first 2 product names, and grand total
+- Floating cart pill (bottom-center on all screen sizes) showing item count, first 2 product names, and grand total; forest green background with terracotta price badge
 - Tap pill → right-side drawer slides in showing all cart items with photo/emoji, name, unit, qty controls, subtotal
 - **Bill Summary** in drawer: Items Total + Delivery Fee + To Pay
 - Cart persisted in localStorage (survives page refresh)
@@ -76,15 +76,16 @@ Single non-technical person — Vijay Kumar Umesh. They:
 - Saved in Firestore as separate `deliveryFee` field
 
 #### Order Placement
-- Order form modal: customer name, phone, delivery address, preferred delivery date, delivery time slot, optional notes
+- Order form modal: customer name, phone, optional email, delivery address, preferred delivery date, delivery time slot, optional notes
 - Order summary shows all items + delivery fee + grand total
+- Submit button labelled "Click here to confirm the order"
 - On submit: order saved to Firestore, stock decremented atomically, WhatsApp deep link opened with pre-filled order summary
+- If customer provides email, an order confirmation email is sent to them with full order breakdown
 - Success screen shown after order
 
-#### UPI Payment *(built, currently disabled)*
-- Payment modal with deep links for PhonePe, GPay, Paytm
-- QR code for scanning via QR Server API
-- Copy UPI ID button
+#### UPI Payment *(removed — pending third-party integration)*
+- Payment section and Pay Now button removed from the success screen
+- To be re-implemented via a third-party payment provider
 
 ---
 
@@ -126,7 +127,8 @@ Single non-technical person — Vijay Kumar Umesh. They:
 - Browser push notification (FCM) for every new customer order — shows customer name, phone, items, total
 - Browser push notification when any product hits zero stock — prompts replenishment
 - Notification sound via Web Audio API
-- Email to `ainoramanethota@gmail.com` for every new customer order — full order details
+- Email to `ainoramanethota@gmail.com` for every new customer order — full order details including customer email if provided
+- Confirmation email to customer if they provided an email address at checkout
 
 #### Analytics (Mixpanel)
 - Buyer-side funnel tracking only
@@ -147,7 +149,7 @@ available, sortOrder, badge, createdAt
 
 ### Order
 ```
-id, customerName, phone, address,
+id, customerName, phone, email (optional), address,
 deliveryDate, deliveryTime, notes,
 items: [{ productId, name, qty, price, subtotal }],
 itemsTotal, deliveryFee, total,
@@ -170,7 +172,7 @@ createdAt, updatedAt
 | Push Notifications | Firebase Cloud Messaging | Free, integrates with existing Firebase project |
 | Email | Netlify Function + Nodemailer | Credentials never in code, free on Netlify |
 | Analytics | Mixpanel (free tier) | Buyer funnel tracking, drop-off analysis |
-| Payments | UPI deep links | No payment gateway fees, works with any UPI app |
+| Payments | Third-party provider (TBD) | UPI deep links removed; awaiting integration |
 | Orders | WhatsApp Business click-to-chat | Zero friction, sent from business number |
 | Hosting | Netlify | Free static hosting, auto-deploys from GitHub |
 | Domain | ainoramanethota.in | Custom branded domain via CNAME |
@@ -195,13 +197,13 @@ createdAt, updatedAt
 - **No npm/build step** — all dependencies via CDN, deployable as plain static files
 - **Single admin** — no multi-user roles required
 - **Free tier** — Firebase Spark plan, Netlify free tier, Gmail free, Mixpanel free
-- **UPI payments on hold** — pending PhonePe business account approval
+- **Payments on hold** — UPI deep link flow removed; third-party payment provider integration pending
 
 ---
 
 ## 8. Future Scope *(not committed)*
 
-- Re-enable UPI payment flow once PhonePe business account is approved
+- Integrate third-party payment provider (replacing removed UPI deep link flow)
 - WhatsApp Business API automated messages (confirmed + delivered triggers) — on hold pending Instagram growth and business account setup
 - Customer order history (lookup by phone number)
 - Delivery slot management (block out dates)
@@ -218,3 +220,4 @@ createdAt, updatedAt
 | 1.0 | April 2026 | Initial PRD — full feature documentation of live product |
 | 1.1 | April 2026 | Added: email notifications, sold-out alerts, product reorder fix, "Sold Out" label, Mixpanel analytics, WhatsApp Business number |
 | 1.2 | April 2026 | Added: cart redesign (floating pill + right-side drawer + bill summary), ₹25 delivery fee, delivery fee toggle for admin pickup orders |
+| 1.3 | May 2026 | Added: optional email field on order form with customer confirmation email; cart pill centered on all screens with forest green + terracotta styling; checkout button renamed; payment section removed pending third-party integration |
